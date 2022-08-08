@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, List
 
 import asyncpg
 from dotenv import load_dotenv
@@ -28,7 +28,8 @@ CREATE TABLE guilds (
     average_skills REAL,
     average_catacombs REAL,
     average_slayer REAL,
-    scammers SMALLINT
+    scammers SMALLINT,
+    position_change SMALLINT
 
 )
 guilds.players is an aray of uuids
@@ -81,7 +82,7 @@ CREATE TABLE players (
         self.client.logger.info('Database connection closed.')
         return self
 
-    def format_json(self, record: asyncpg.Record) -> Union[dict, None]:
+    def format_json(self, record: asyncpg.Record) -> dict:
         if record is None:
             return None
         return {key: (json.loads(value) if key in self.json_keys else value) for (key, value) in dict(record).items()}
