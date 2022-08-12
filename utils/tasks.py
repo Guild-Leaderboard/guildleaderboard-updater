@@ -18,10 +18,10 @@ class Tasks:
 
     async def open(self):
         self.client.loop.create_task(self.delete_old_records())
-        self.client.loop.create_task(self.update_positions())
+        #self.client.loop.create_task(self.update_positions())
         # print(Time().datetime)
         self.client.loop.create_task(self.update_guilds())
-        # self.client.loop.create_task(self.add_new_guild(guild_id="60ac425a8ea8c9bb7f6da827"))
+        # self.client.loop.create_task(self.add_new_guild(guild_id="61bfc8418ea8c9149942adb4"))
 
         # self.client.loop.create_task(self.add_new_guild(guild_name="Drachen Waechter 2"))
         # self.client.loop.create_task(self.find_new_guilds())
@@ -132,6 +132,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             average_slayer=new_guild_stats["average_slayers"],
             scammers=new_guild_stats["scammers"],
         )
+        self.client.loop.create_task(self.update_positions())
 
     async def delete_old_records(self):
         # members = await self.client.httpr.get_guild_members(name=self.guilds_to_add[0])
@@ -160,46 +161,46 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
             await asyncio.sleep(10)
 
     async def update_positions(self):
-        while True:
-            old_guilds = [self.client.db.format_json(i) for i in (await self.client.db.pool.fetch("""
-        SELECT DISTINCT ON (guild_id) guild_id,
-                              guild_name,
-                              average_weight,
-                              array_length(players, 1) AS players                      
-        FROM guilds
-        WHERE Now() - capture_date >=  '7 days'
-        ORDER BY guild_id, capture_date DESC; 
-            """))]
-            current_guilds = [self.client.db.format_json(i) for i in (await self.client.db.pool.fetch("""
-        SELECT DISTINCT ON (guild_id) guild_id,
-                              guild_name,
-                              average_weight,
-                              array_length(players, 1) AS players                       
-        FROM guilds
-        ORDER BY guild_id, capture_date DESC;    
-            """))]
+        old_guilds = [self.client.db.format_json(i) for i in (await self.client.db.pool.fetch("""
+    SELECT DISTINCT ON (guild_id) guild_id,
+                          guild_name,
+                          average_weight,
+                          array_length(players, 1) AS players                      
+    FROM guilds
+    WHERE Now() - capture_date >=  '7 days'
+    ORDER BY guild_id, capture_date DESC; 
+        """))]
+        current_guilds = [self.client.db.format_json(i) for i in (await self.client.db.pool.fetch("""
+    SELECT DISTINCT ON (guild_id) guild_id,
+                          guild_name,
+                          average_weight,
+                          array_length(players, 1) AS players                       
+    FROM guilds
+    ORDER BY guild_id, capture_date DESC;    
+        """))]
 
-            current_guilds_sorted = sorted(current_guilds,
-                                           key=lambda x: x["average_weight"] * weight_multiplier(x["players"]),
-                                           reverse=True)
-            old_guilds_sorted = sorted(old_guilds, key=lambda x: x["average_weight"] * weight_multiplier(x["players"]),
+        current_guilds_sorted = sorted(current_guilds,
+                                       key=lambda x: x["average_weight"] * weight_multiplier(x["players"]),
                                        reverse=True)
-            current_guild_positions = {d["guild_id"]: i + 1 for i, d in enumerate(current_guilds_sorted)}
-            old_guild_positions = {d["guild_id"]: i + 1 for i, d in enumerate(old_guilds_sorted)}
-            # positions_difference = {
-            #     k: old_guild_positions[k] - current_guild_positions[k] for k in
-            #     set(current_guild_positions.keys()) & set(old_guild_positions.keys())
-            # }
-            positions_difference = {
-                k: old_guild_positions[k] - current_guild_positions[k] for k in
-                set(current_guild_positions.keys()) & set(old_guild_positions.keys())
-            }
-            for guild_id, position_change in positions_difference.items():
-                await self.client.db.pool.execute("""
-        UPDATE guilds SET position_change = $1 WHERE guild_id = $2;
-                """, position_change, guild_id)
-            print("Updated positions", len(old_guild_positions), len(current_guild_positions))
-            await asyncio.sleep(3600)
+        old_guilds_sorted = sorted(old_guilds, key=lambda x: x["average_weight"] * weight_multiplier(x["players"]),
+                                   reverse=True)
+
+        old_guild_positions = {d["guild_name"]: i + 1 for i, d in enumerate(old_guilds_sorted)}
+        current_guild_positions = {d["guild_name"]: i + 1 for i, d in enumerate(current_guilds_sorted)}
+        # positions_difference = {
+        #     k: old_guild_positions[k] - current_guild_positions[k] for k in
+        #     set(current_guild_positions.keys()) & set(old_guild_positions.keys())
+        # }
+        positions_difference = {
+            k: old_guild_positions[k] - current_guild_positions[k] for k in
+            set(current_guild_positions.keys()) & set(old_guild_positions.keys())
+        }
+        print(positions_difference)
+        # for guild_id, position_change in positions_difference.items():
+        #     await self.client.db.pool.execute("""
+    # UPDATE guilds SET position_change = $1 WHERE guild_id = $2;
+    #         """, position_change, guild_id)
+        print("Updated positions", len(old_guild_positions), len(current_guild_positions))
 
     async def find_new_guilds(self):
         await asyncio.sleep(60)
