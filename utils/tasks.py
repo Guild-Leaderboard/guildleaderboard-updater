@@ -167,7 +167,7 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
                           average_weight,
                           array_length(players, 1) AS players                      
     FROM guilds
-    WHERE Now() - capture_date >=  '7 days'
+    WHERE Now() - capture_date >=  '3 days'
     ORDER BY guild_id, capture_date DESC; 
         """))]
         current_guilds = [self.client.db.format_json(i) for i in (await self.client.db.pool.fetch("""
