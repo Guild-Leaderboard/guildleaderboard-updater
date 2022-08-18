@@ -20,8 +20,8 @@ class Tasks:
         self.client.loop.create_task(self.delete_old_records())
         #self.client.loop.create_task(self.update_positions())
         # print(Time().datetime)
-        self.client.loop.create_task(self.update_guilds())
-        # self.client.loop.create_task(self.add_new_guild(guild_id="61bfc8418ea8c9149942adb4"))
+        # self.client.loop.create_task(self.update_guilds())
+        self.client.loop.create_task(self.add_new_guild(guild_name="Sky Hub"))
 
         # self.client.loop.create_task(self.add_new_guild(guild_name="Drachen Waechter 2"))
         # self.client.loop.create_task(self.find_new_guilds())
@@ -60,14 +60,16 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         scam_reason = None
         if sbzscammer["success"]:
             scam_reason = sbzscammer["result"]["reason"]
+        lily_weight = await player.lily_weight(self.client)
 
         p_stats = {
             "uuid": player.uuid,
             "name": name,
-            "weight": player.weight(),
-            "skill_weight": player.skill_weight(),
-            "slayer_weight": player.slayer_weight(),
-            "dungeon_weight": player.dungeon_weight(),
+            "weight": player.senither_weight(),
+            "lily_weight": lily_weight["total"],
+            "skill_weight": player.senither_skill_weight(),
+            "slayer_weight": player.senither_slayer_weight(),
+            "dungeon_weight": player.senither_dungeon_weight(),
             "average_skill": player.average_skill,
             "catacomb": player.catacombs_level,
             "catacomb_xp": player.catacombs_xp,
@@ -76,6 +78,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         }
         await self.client.db.insert_new_player(**p_stats)
         guild_stats["average_weight"] += p_stats["weight"]
+        guild_stats["average_lily_weight"] += p_stats["lily_weight"]
         guild_stats["average_slayers"] += p_stats["total_slayer"]
         guild_stats["average_catacombs"] += p_stats["catacomb"]
         guild_stats["average_skill_average"] += p_stats["average_skill"]
@@ -92,6 +95,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
 
         guild_stats = {
             "average_weight": 0,
+            "average_lily_weight": 0,
             "average_slayers": 0,
             "average_catacombs": 0,
             "average_skill_average": 0,
@@ -121,12 +125,14 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         if weight_req and new_guild_stats["average_weight"] < weight_req:
             print("Not adding", guild_name or guild_id)
             return
+
         print("Adding", guild_name or guild_id)
         await self.client.db.insert_new_guild(
             guild_id=guild_data["_id"],
             guild_name=guild_data["name"],
             players=[i["uuid"] for i in guild_data["members"]],
             average_weight=new_guild_stats["average_weight"],
+            average_lily_weight=new_guild_stats["average_lily_weight"],
             average_skills=new_guild_stats["average_skill_average"],
             average_catacombs=new_guild_stats["average_catacombs"],
             average_slayer=new_guild_stats["average_slayers"],

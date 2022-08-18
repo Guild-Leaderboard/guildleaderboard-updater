@@ -29,8 +29,8 @@ CREATE TABLE guilds (
     average_catacombs REAL,
     average_slayer REAL,
     scammers SMALLINT,
-    position_change SMALLINT
-
+    position_change SMALLINT,
+    average_lily_weight REAL
 )
 guilds.players is an aray of uuids
 
@@ -46,7 +46,8 @@ CREATE TABLE players (
     catacomb_xp REAL,
     total_slayer REAL,
     capture_date TIMESTAMP,
-    scam_reason TEXT
+    scam_reason TEXT,
+    lily_weight REAL
 )
 """
 
@@ -89,14 +90,14 @@ CREATE TABLE players (
 
     async def insert_new_guild(
             self, guild_id: str, guild_name: str, players: List[str],
-            average_weight: float, average_skills: float, average_catacombs: float,
+            average_weight: float, average_lily_weight: float, average_skills: float, average_catacombs: float,
             average_slayer: float, scammers: int
     ):
         await self.pool.execute(
             """
-INSERT INTO guilds (guild_id, guild_name, capture_date, players, average_weight, average_skills, average_catacombs, average_slayer, scammers)
-VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7, $8)        
-        """, guild_id, guild_name, players, average_weight, average_skills, average_catacombs, average_slayer, scammers
+INSERT INTO guilds (guild_id, guild_name, capture_date, players, average_weight, average_skills, average_catacombs, average_slayer, scammers, average_lily_weight)
+VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7, $8, $9)        
+        """, guild_id, guild_name, players, average_weight, average_skills, average_catacombs, average_slayer, scammers, average_lily_weight
         )
 
     async def insert_new_player(self, **kwargs):
