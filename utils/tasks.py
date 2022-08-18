@@ -18,10 +18,10 @@ class Tasks:
 
     async def open(self):
         self.client.loop.create_task(self.delete_old_records())
-        #self.client.loop.create_task(self.update_positions())
+        self.client.loop.create_task(self.update_positions())
         # print(Time().datetime)
         # self.client.loop.create_task(self.update_guilds())
-        self.client.loop.create_task(self.add_new_guild(guild_name="Sky Hub"))
+        # self.client.loop.create_task(self.add_new_guild(guild_name="Sky Hub"))
 
         # self.client.loop.create_task(self.add_new_guild(guild_name="Drachen Waechter 2"))
         # self.client.loop.create_task(self.find_new_guilds())
