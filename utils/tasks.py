@@ -191,8 +191,8 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
         old_guilds_sorted = sorted(old_guilds, key=lambda x: x["average_weight"] * weight_multiplier(x["players"]),
                                    reverse=True)
 
-        old_guild_positions = {d["guild_name"]: i + 1 for i, d in enumerate(old_guilds_sorted)}
-        current_guild_positions = {d["guild_name"]: i + 1 for i, d in enumerate(current_guilds_sorted)}
+        old_guild_positions = {d["guild_id"]: i + 1 for i, d in enumerate(old_guilds_sorted)}
+        current_guild_positions = {d["guild_id"]: i + 1 for i, d in enumerate(current_guilds_sorted)}
         # positions_difference = {
         #     k: old_guild_positions[k] - current_guild_positions[k] for k in
         #     set(current_guild_positions.keys()) & set(old_guild_positions.keys())
@@ -202,10 +202,10 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
             set(current_guild_positions.keys()) & set(old_guild_positions.keys())
         }
         print(positions_difference)
-        # for guild_id, position_change in positions_difference.items():
-        #     await self.client.db.pool.execute("""
-    # UPDATE guilds SET position_change = $1 WHERE guild_id = $2;
-    #         """, position_change, guild_id)
+        for guild_id, position_change in positions_difference.items():
+            await self.client.db.pool.execute("""
+    UPDATE guilds SET position_change = $1 WHERE guild_id = $2;
+            """, position_change, guild_id)
         print("Updated positions", len(old_guild_positions), len(current_guild_positions))
 
     async def find_new_guilds(self):
