@@ -120,7 +120,7 @@ class Httpr:
             if r.status == 200:
                 return await r.json()
             else:
-                raise UnexpectedResponse("Error getting sb_player_data", r)
+                raise UnexpectedResponse(f"Error getting sb_player_data {r.status}", r)
 
     @ratelimit_apis(get_sb_player_data, host_mapping=host_mapping)
     async def get_profile(

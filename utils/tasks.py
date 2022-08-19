@@ -20,7 +20,7 @@ class Tasks:
         self.client.loop.create_task(self.delete_old_records())
         self.client.loop.create_task(self.update_positions())
         # print(Time().datetime)
-        # self.client.loop.create_task(self.update_guilds())
+        self.client.loop.create_task(self.update_guilds())
         # self.client.loop.create_task(self.add_new_guild(guild_name="Sky Hub"))
 
         # self.client.loop.create_task(self.add_new_guild(guild_name="Drachen Waechter 2"))
