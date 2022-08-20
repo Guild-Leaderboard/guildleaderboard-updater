@@ -115,8 +115,7 @@ class Httpr:
 
     @ratelimit_apis("api.hypixel.net", host_mapping=host_mapping)
     async def get_sb_player_data(self, uuid: str, ) -> dict:
-        async with self.session.get(f"https://api.hypixel.net/skyblock/profiles?uuid={uuid}",
-                                    ) as r:
+        async with self.session.get(f"https://api.hypixel.net/skyblock/profiles?uuid={uuid}") as r:
             if r.status == 200:
                 return await r.json()
             else:

@@ -172,7 +172,7 @@ class RatelimitHandler:
                 if api_d["remaining"] <= 0:
                     extra_wait = int(api_d["in_queue"] / api_d["max"]) * 60
 
-                    sleep_time = (api_d["reset_time"] - Time().time) + extra_wait
+                    sleep_time = abs((api_d["reset_time"] - Time().time) + extra_wait)
                     if sleep_time >= max_ratelimit_wait:
                         api_d["in_queue"] -= 1
                         from objects.errors import RatelimitReached

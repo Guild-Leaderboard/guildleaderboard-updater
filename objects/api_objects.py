@@ -166,11 +166,15 @@ class SkyBlockPlayer:
             found_profile = sorted(profiles, key=lambda x: x.get("last_save", 0), reverse=True)[0]
 
         elif select_profile_on == "weight":
-            found_profile = sorted(
-                self.player_data["profiles"],
-                key=lambda x: SkyBlockPlayer(self.uuid, self.player_data, x["profile_id"]).senither_weight(),
-                reverse=True
-            )[0]["members"][self.uuid]
+            try:
+                found_profile = sorted(
+                    self.player_data["profiles"],
+                    key=lambda x: SkyBlockPlayer(self.uuid, self.player_data, x["profile_id"]).senither_weight(),
+                    reverse=True
+                )[0]["members"][self.uuid]
+            except IndexError:
+                self.selected_profile_name = None
+                return None
 
         elif select_profile_on == "cata":
             found_profile = sorted(
@@ -460,12 +464,11 @@ class SkyBlockPlayer:
             # Skill api is off
             try:
                 player = await app.httpr.get_player_data(self.uuid)  # Get the player data from the hypixel api
-
                 for skill_type, achv_name in lilyweight.used_skills.items():
-                    level = player["player"]["achievements"].get(achv_name, 0)
+                    level = player["player"].get("achievements", {}).get(achv_name, 0)
                     # Get the level of the skill from achievements
-                    skill_experience_dict[skill_type] = lilyweight.get_xp_from_level(
-                        level)  # Get the xp of the skill from the level
+                    skill_experience_dict[skill_type] = lilyweight.get_xp_from_level(level)
+                    # Get the xp of the skill from the level
                     skill_level_dict[skill_type] = level  # Add the skill level to the skill level dict
             except Exception as e:
                 logging.getLogger("lilyweight").error(f"Error getting player data: {e} {self.uuid}")
