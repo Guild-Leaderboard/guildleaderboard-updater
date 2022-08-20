@@ -65,23 +65,23 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         p_stats = {
             "uuid": player.uuid,
             "name": name,
-            "weight": player.senither_weight(),
+            "senither_weight": player.senither_weight(),
             "lily_weight": lily_weight["total"],
             "skill_weight": player.senither_skill_weight(),
             "slayer_weight": player.senither_slayer_weight(),
             "dungeon_weight": player.senither_dungeon_weight(),
             "average_skill": player.average_skill,
-            "catacomb": player.catacombs_level,
+            "catacombs": player.catacombs_level,
             "catacomb_xp": player.catacombs_xp,
             "total_slayer": player.slayer_xp,
             "scam_reason": scam_reason,
         }
         await self.client.db.insert_new_player(**p_stats)
-        guild_stats["average_weight"] += p_stats["weight"]
-        guild_stats["average_lily_weight"] += p_stats["lily_weight"]
-        guild_stats["average_slayers"] += p_stats["total_slayer"]
-        guild_stats["average_catacombs"] += p_stats["catacomb"]
-        guild_stats["average_skill_average"] += p_stats["average_skill"]
+        guild_stats["senither_weight"] += p_stats["senither_weight"]
+        guild_stats["lily_weight"] += p_stats["lily_weight"]
+        guild_stats["slayer"] += p_stats["total_slayer"]
+        guild_stats["catacombs"] += p_stats["catacombs"]
+        guild_stats["skills"] += p_stats["average_skill"]
         guild_stats["count"] += 1
         if p_stats["scam_reason"]:
             guild_stats["scammers"] += 1
@@ -94,11 +94,11 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         members = [i["uuid"] for i in guild_data["members"]]
 
         guild_stats = {
-            "average_weight": 0,
-            "average_lily_weight": 0,
-            "average_slayers": 0,
-            "average_catacombs": 0,
-            "average_skill_average": 0,
+            "senither_weight": 0,
+            "lily_weight": 0,
+            "slayer": 0,
+            "catacombs": 0,
+            "skills": 0,
             "scammers": 0,
             "count": 0,
         }
@@ -122,7 +122,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
                 new_guild_stats[i] = j / guild_stats["count"]
 
         print(new_guild_stats)
-        if weight_req and new_guild_stats["average_weight"] < weight_req:
+        if weight_req and new_guild_stats["senither_weight"] < weight_req:
             print("Not adding", guild_name or guild_id)
             return
 
@@ -131,11 +131,11 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             guild_id=guild_data["_id"],
             guild_name=guild_data["name"],
             players=[i["uuid"] for i in guild_data["members"]],
-            average_weight=new_guild_stats["average_weight"],
-            average_lily_weight=new_guild_stats["average_lily_weight"],
-            average_skills=new_guild_stats["average_skill_average"],
-            average_catacombs=new_guild_stats["average_catacombs"],
-            average_slayer=new_guild_stats["average_slayers"],
+            senither_weight=new_guild_stats["senither_weight"],
+            lily_weight=new_guild_stats["lily_weight"],
+            skills=new_guild_stats["skills"],
+            catacombs=new_guild_stats["catacombs"],
+            slayer=new_guild_stats["slayer"],
             scammers=new_guild_stats["scammers"],
         )
         self.client.loop.create_task(self.update_positions())
@@ -170,25 +170,25 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
         old_guilds = [self.client.db.format_json(i) for i in (await self.client.db.pool.fetch("""
     SELECT DISTINCT ON (guild_id) guild_id,
                           guild_name,
-                          average_weight,
+                          senither_weight,
                           array_length(players, 1) AS players                      
     FROM guilds
-    WHERE Now() - capture_date >=  '3 days'
+        WHERE Now() - capture_date >=  '3 days'
     ORDER BY guild_id, capture_date DESC; 
         """))]
         current_guilds = [self.client.db.format_json(i) for i in (await self.client.db.pool.fetch("""
     SELECT DISTINCT ON (guild_id) guild_id,
                           guild_name,
-                          average_weight,
+                          senither_weight,
                           array_length(players, 1) AS players                       
     FROM guilds
     ORDER BY guild_id, capture_date DESC;    
         """))]
 
         current_guilds_sorted = sorted(current_guilds,
-                                       key=lambda x: x["average_weight"] * weight_multiplier(x["players"]),
+                                       key=lambda x: x["senither_weight"] * weight_multiplier(x["players"]),
                                        reverse=True)
-        old_guilds_sorted = sorted(old_guilds, key=lambda x: x["average_weight"] * weight_multiplier(x["players"]),
+        old_guilds_sorted = sorted(old_guilds, key=lambda x: x["senither_weight"] * weight_multiplier(x["players"]),
                                    reverse=True)
 
         old_guild_positions = {d["guild_id"]: i + 1 for i, d in enumerate(old_guilds_sorted)}
