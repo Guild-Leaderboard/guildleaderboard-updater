@@ -18,12 +18,31 @@ class Tasks:
 
     async def open(self):
         self.client.loop.create_task(self.delete_old_records())
+        self.client.loop.create_task(self.resolve_names())
         self.client.loop.create_task(self.update_guilds())
+
         # self.client.loop.create_task(self.add_new_guild(guild_name="Drachen Waechter 2"))
         # self.client.loop.create_task(self.find_new_guilds())
 
         self.client.logger.info("Tasks started")
         return self
+
+    async def resolve_names(self):
+        while True:
+            broken_rows = await self.client.db.pool.fetch("""
+    SELECT * FROM history WHERE uuid = name ORDER by capture_date DESC;
+            """)
+            uuids = [i["uuid"] for i in broken_rows]
+            uuid_name_dict = await self.client.db.get_names(uuids)
+            for row in broken_rows:
+                try:
+                    name = uuid_name_dict[row["uuid"]]
+                except KeyError:
+                    name = await self.client.httpr.get_name(row["uuid"])
+                await self.client.db.pool.execute("""
+    UPDATE history SET name = $1 WHERE uuid = $2;
+                """, name, row["uuid"])
+            await asyncio.sleep(3600)
 
     async def get_player(self, guild_stats, uuid):
         # r = await self.client.db.pool.fetchrow("""
