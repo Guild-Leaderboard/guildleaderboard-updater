@@ -12,10 +12,10 @@ load_dotenv(".env")
 
 class Client:
     def __init__(self):
-        self.loop = None
-        self.db = None
-        self.httpr = None
-        self.tasks = None
+        self.loop: asyncio.BaseEventLoop = None
+        self.db: Database = None
+        self.httpr: Httpr = None
+        self.tasks: Tasks = None
         self.logger = logging.getLogger("backend")
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(logging.StreamHandler())

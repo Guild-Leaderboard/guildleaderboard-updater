@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import datetime
+
 from typing import TYPE_CHECKING, List
 
 import asyncpg
@@ -53,6 +55,15 @@ CREATE TABLE players (
 CREATE TABLE guild_information (
     guild_id TEXT,
     discord TEXT
+)
+
+CREATE TABLE history (
+    type TEXT,
+    uuid TEXT,
+    name TEXT,
+    capture_date TIMESTAMP,
+    guild_id TEXT,
+    guild_name TEXT
 )
 """
 
@@ -121,3 +132,34 @@ SELECT * FROM guilds WHERE guild_name = $1 LIMIT 1;
         else:
             r = await self.pool.fetchrow(query_str, guild_id)
         return self.format_json(r)
+
+    async def get_guild_members(self, guild_id, conn=None):
+        query_str = """
+SELECT DISTINCT ON (guild_id) 
+    players
+FROM guilds
+    WHERE guild_id = $1 
+    ORDER BY guild_id, capture_date DESC;
+        """
+        if conn:
+            r = await conn.fetchrow(query_str, guild_id)
+        else:
+            r = await self.pool.fetchrow(query_str, guild_id)
+        return r["players"] if r else []
+
+    async def insert_history(self, history_type: str, uuid: str, name: str, guild_id: str, guild_name: str, capture_date: datetime.datetime=None):
+        args = [history_type, uuid, name, guild_id, guild_name]
+        if capture_date:
+            args.append(capture_date)
+
+        await self.pool.execute(
+            f"""
+INSERT INTO history (type, uuid, name, capture_date, guild_id, guild_name)
+VALUES ($1, $2, $3, {'$6' if capture_date else 'NOW()'}, $4, $5)        
+        """, *args
+        )
+
+    async def get_names(self, uuids: List):
+        r = await self.pool.fetch("""
+SELECT uuid, name FROM players WHERE uuid = ANY($1)""", uuids)
+        return {row['uuid']: row['name'] for row in r}
