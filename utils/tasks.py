@@ -106,11 +106,11 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
 
         for leave_uuid in leave_uuids:
             name = name_uuid_dict.get(leave_uuid, leave_uuid)
-            await self.client.db.insert_history("leave", leave_uuid, name, guild_id, guild_name)
+            await self.client.db.insert_history("0", leave_uuid, name, guild_id, guild_name)
 
         for join_uuid in join_uuids:
             name = name_uuid_dict.get(join_uuid, join_uuid)
-            await self.client.db.insert_history("join", join_uuid, name, guild_id, guild_name)
+            await self.client.db.insert_history("1", join_uuid, name, guild_id, guild_name)
 
     async def add_new_guild(self, guild_name=None, guild_id=None, weight_req=None):
         r = await self.client.httpr.get_guild_data(name=guild_name, _id=guild_id)
