@@ -20,8 +20,13 @@ class Tasks:
         self.client.loop.create_task(self.delete_old_records())
         self.client.loop.create_task(self.resolve_names())
         self.client.loop.create_task(self.update_guilds())
+        # r = await self.client.db.pool.fetch("""
+        # SELECT * FROM history
+        #         """)
+        #         with open("history.json", "w") as f:
+        #             json.dump([{key: str(value) if key == "capture_date" else value for key, value in dict(i).items()} for i in r], f, indent=4)
 
-        # self.client.loop.create_task(self.add_new_guild(guild_name="Drachen Waechter 2"))
+        # self.client.loop.create_task(self.add_new_guild(guild_name="Cromax"))
         # self.client.loop.create_task(self.find_new_guilds())
 
         self.client.logger.info("Tasks started")
@@ -100,7 +105,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
 
     async def add_guild_history(self, old_players, new_players, guild_id, guild_name):
         leave_uuids = [uuid for uuid in old_players if uuid not in new_players]
-        join_uuids = [uuid for uuid in new_players if old_players and uuid not in old_players]
+        join_uuids = [uuid for uuid in new_players if uuid not in old_players]
 
         name_uuid_dict = await self.client.db.get_names(leave_uuids + join_uuids)
 
@@ -137,6 +142,9 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             if len(tasks) >= 2:
                 await asyncio.wait(tasks)
                 tasks = []
+
+        if guild_stats["count"] != len(members):
+            print("Count mismatch", guild_stats["count"], len(members), guild_name)
 
         new_guild_stats = {}
         for i, j in guild_stats.items():
@@ -257,15 +265,10 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
 # SELECT DISTINCT ON (guild_id)
 #     guild_id, guild_name
 # FROM guilds
-#         """)
+#             """)
 #         all_guilds = {x["guild_id"]: x["guild_name"] for x in r}
+#         progess = 0
 #         for guild_id, guild_name in all_guilds.items():
-#             await self.client.db.pool.execute("""
-# UPDATE history SET guild_name = $1 WHERE guild_id = $2;
-#             """, guild_name, guild_id)
-#
-#         return
-#         for guild_id in all_guilds:
 #             guild_history = await self.client.db.pool.fetch("""
 # SELECT
 #     players,
@@ -273,7 +276,7 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
 # FROM guilds
 #     WHERE guild_id = $1
 # ORDER BY capture_date
-#             """, guild_id)
+#                 """, guild_id)
 #             prev_players = []
 #
 #             for guild_history_entry in guild_history:
@@ -281,17 +284,17 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
 #                 capture_date: datetime.timedelta = guild_history_entry["capture_date"]
 #
 #                 leave_uuids = [uuid for uuid in prev_players if uuid not in current_players]
-#                 join_uuids = [uuid for uuid in current_players if uuid not in prev_players and prev_players]
+#                 join_uuids = [uuid for uuid in current_players if uuid not in prev_players]
 #
 #                 name_uuid_dict = await self.client.db.get_names(leave_uuids + join_uuids)
 #
-#                 # for leave_uuid in leave_uuids:
-#                 #     await self.client.db.insert_history("leave", leave_uuid, name_uuid_dict.get(leave_uuid, leave_uuid),
-#                 #                                         guild_id, capture_date)
-#                 #
-#                 # for join_uuid in join_uuids:
-#                 #     await self.client.db.insert_history("join", join_uuid, name_uuid_dict.get(join_uuid, join_uuid),
-#                 #                                         guild_id, capture_date)
+#                 for leave_uuid in leave_uuids:
+#                     await self.client.db.insert_history("0", leave_uuid, name_uuid_dict.get(leave_uuid, leave_uuid),
+#                                                         guild_id, guild_name, capture_date)
+#
+#                 for join_uuid in join_uuids:
+#                     await self.client.db.insert_history("1", join_uuid, name_uuid_dict.get(join_uuid, join_uuid),
+#                                                         guild_id, guild_name, capture_date)
 #
 #                 prev_players = current_players
 #             print(guild_id, progess)
