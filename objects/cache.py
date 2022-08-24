@@ -165,11 +165,11 @@ class RatelimitHandler:
             params.headers.update(api_d.get("headers", {}))
 
             while 1:
-                if (api_d["reset_time"] - Time().time) + 1 <= 0:
+                if (api_d["reset_time"] - Time().time) + 2 <= 0:
                     api_d["remaining"], api_d["reset_time"] = api_d["max"] - 1, Time().time + 60
                     break
 
-                if api_d["remaining"] <= 0:
+                if api_d["remaining"] <= 1:
                     extra_wait = int(api_d["in_queue"] / api_d["max"]) * 60
 
                     sleep_time = abs((api_d["reset_time"] - Time().time) + extra_wait)
@@ -185,7 +185,7 @@ class RatelimitHandler:
                     )
                     await asyncio.sleep(sleep_time + 1.5)
 
-                elif api_d["remaining"] > 0:
+                elif api_d["remaining"] > 1:
                     api_d["remaining"] -= 1
                     break
                 print("waiting for ratelimit")
