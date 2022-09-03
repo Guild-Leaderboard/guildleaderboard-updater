@@ -84,12 +84,8 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "name": name,
             "senither_weight": player.senither_weight(),
             "lily_weight": lily_weight["total"],
-            "skill_weight": player.senither_skill_weight(),
-            "slayer_weight": player.senither_slayer_weight(),
-            "dungeon_weight": player.senither_dungeon_weight(),
             "average_skill": player.average_skill,
             "catacombs": player.catacombs_level,
-            "catacomb_xp": player.catacombs_xp,
             "total_slayer": player.slayer_xp,
             "scam_reason": scam_reason,
         }
@@ -102,6 +98,55 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         guild_stats["count"] += 1
         if p_stats["scam_reason"]:
             guild_stats["scammers"] += 1
+
+        dungeon_types = player.profile.get("dungeons", {}).get("player_classes", {})
+
+        player_metrics = {
+            "uuid": player.uuid,
+            "name": name,
+
+            "senither_weight": player.senither_weight(),
+            "lily_weight": lily_weight["total"],
+
+            "zombie_xp": player.profile.get("slayer_bosses", {}).get("zombie", {}).get("xp", 0),
+            "spider_xp": player.profile.get("slayer_bosses", {}).get("spider", {}).get("xp", 0),
+            "wolf_xp": player.profile.get("slayer_bosses", {}).get("wolf", {}).get("xp", 0),
+            "enderman_xp": player.profile.get("slayer_bosses", {}).get("enderman", {}).get("xp", 0),
+            "blaze_xp": player.profile.get("slayer_bosses", {}).get("blaze", {}).get("xp", 0),
+
+            "catacombs_xp": player.catacombs_xp,
+            "catacombs": player.catacombs_level,
+            "healer": player.get_cata_lvl(dungeon_types.get("healer", {}).get("experience", 0)),
+            "healer_xp": dungeon_types.get("healer", {}).get("experience", 0),
+            "mage": player.get_cata_lvl(dungeon_types.get("mage", {}).get("experience", 0)),
+            "mage_xp": dungeon_types.get("mage", {}).get("experience", 0),
+            "berserk": player.get_cata_lvl(dungeon_types.get("berserk", {}).get("experience", 0)),
+            "berserk_xp": dungeon_types.get("berserk", {}).get("experience", 0),
+            "archer": player.get_cata_lvl(dungeon_types.get("archer", {}).get("experience", 0)),
+            "archer_xp": dungeon_types.get("archer", {}).get("experience", 0),
+            "tank": player.get_cata_lvl(dungeon_types.get("tank", {}).get("experience", 0)),
+            "tank_xp": dungeon_types.get("tank", {}).get("experience", 0),
+
+            "average_skill": player.average_skill,
+            "taming": player.get_skill_lvl("taming", player.profile.get("experience_skill_taming", 0)),
+            "taming_xp": player.profile.get("experience_skill_taming", 0),
+            "mining": player.get_skill_lvl("mining", player.profile.get("experience_skill_mining", 0)),
+            "mining_xp": player.profile.get("experience_skill_mining", 0),
+            "farming": player.get_skill_lvl("farming", player.profile.get("experience_skill_farming", 0)),
+            "farming_xp": player.profile.get("experience_skill_farming", 0),
+            "combat": player.get_skill_lvl("combat", player.profile.get("experience_skill_combat", 0)),
+            "combat_xp": player.profile.get("experience_skill_combat", 0),
+            "foraging": player.get_skill_lvl("foraging", player.profile.get("experience_skill_foraging", 0)),
+            "foraging_xp": player.profile.get("experience_skill_foraging", 0),
+            "fishing": player.get_skill_lvl("fishing", player.profile.get("experience_skill_fishing", 0)),
+            "fishing_xp": player.profile.get("experience_skill_fishing", 0),
+            "enchanting": player.get_skill_lvl("enchanting", player.profile.get("experience_skill_enchanting", 0)),
+            "enchanting_xp": player.profile.get("experience_skill_enchanting", 0),
+            "alchemy": player.get_skill_lvl("alchemy", player.profile.get("experience_skill_alchemy", 0)),
+            "alchemy_xp": player.profile.get("experience_skill_alchemy", 0),
+        }
+
+        await self.client.db.insert_new_player_metric(**player_metrics)
 
     async def add_guild_history(self, old_players, new_players, guild_id, guild_name):
         leave_uuids = [uuid for uuid in old_players if uuid not in new_players]
@@ -183,14 +228,16 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         # members = await self.client.httpr.get_guild_members(name=self.guilds_to_add[0])
         # print(members)
         while True:
-            r = await self.client.db.pool.execute("""
+            r1 = await self.client.db.pool.execute("""
 DELETE FROM players WHERE (NOW()::date - '90 day'::interval) > capture_date;
             """)
-            print(r)
-            r = await self.client.db.pool.execute("""
+            r2 = await self.client.db.pool.execute("""
 DELETE FROM guilds WHERE (NOW()::date - '90 day'::interval) > capture_date;
             """)
-            print(r)
+            r3 = await self.client.db.pool.execute("""
+DELETE FROM player_metrics WHERE (NOW()::date - '90 day'::interval) > capture_date;
+            """)
+            print(r1, r2, r3)
             await asyncio.sleep(600)
 
     async def update_guilds(self):

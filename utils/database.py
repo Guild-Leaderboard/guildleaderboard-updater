@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import json
 import os
-import datetime
-
 from typing import TYPE_CHECKING, List
 
 import asyncpg
@@ -50,6 +49,52 @@ CREATE TABLE players (
     capture_date TIMESTAMP,
     scam_reason TEXT,
     lily_weight REAL
+)
+
+CREATE TABLE player_metrics (
+    uuid TEXT,
+    name TEXT,
+    capture_date TIMESTAMP,
+
+    senither_weight REAL,
+    lily_weight REAL,
+
+    zombie_xp BIGINT,
+    spider_xp BIGINT,
+    wolf_xp BIGINT,
+    enderman_xp BIGINT,
+    blaze_xp BIGINT,
+
+    catacombs_xp BIGINT,
+    catacombs REAL,
+    healer REAL,
+    healer_xp BIGINT,
+    mage REAL,
+    mage_xp BIGINT,
+    berserk REAL,
+    berserk_xp BIGINT,
+    archer REAL,
+    archer_xp BIGINT,
+    tank REAL,
+    tank_xp BIGINT,
+
+    average_skill REAL,
+    taming REAL,
+    taming_xp BIGINT,
+    mining REAL,
+    mining_xp BIGINT,
+    farming REAL,
+    farming_xp BIGINT,
+    combat REAL,
+    combat_xp BIGINT,
+    foraging REAL,
+    foraging_xp BIGINT,
+    fishing REAL,
+    fishing_xp BIGINT,
+    enchanting REAL,
+    enchanting_xp BIGINT,
+    alchemy REAL,
+    alchemy_xp BIGINT
 )
 
 CREATE TABLE guild_information (
@@ -123,6 +168,13 @@ DO UPDATE SET {", ".join([f"{key}=${i + 1}" for i, key in enumerate(kwargs.keys(
         """
         await self.pool.execute(querry, *list(kwargs.values()))
 
+    async def insert_new_player_metric(self, **kwargs):
+        querry = f"""
+INSERT INTO player_metrics ({", ".join(kwargs.keys())}, capture_date)
+VALUES ({", ".join(["$" + str(i + 1) for i in range(len(kwargs))])}, NOW())
+            """
+        await self.pool.execute(querry, *list(kwargs.values()))
+
     async def get_guild_name(self, guild_id, conn=None):
         query_str = """
 SELECT * FROM guilds WHERE guild_name = $1 LIMIT 1;
@@ -147,7 +199,8 @@ FROM guilds
             r = await self.pool.fetchrow(query_str, guild_id)
         return r["players"] if r else []
 
-    async def insert_history(self, history_type: str, uuid: str, name: str, guild_id: str, guild_name: str, capture_date: datetime.datetime=None):
+    async def insert_history(self, history_type: str, uuid: str, name: str, guild_id: str, guild_name: str,
+                             capture_date: datetime.datetime = None):
         args = [history_type, uuid, name, guild_id, guild_name]
         if capture_date:
             args.append(capture_date)
