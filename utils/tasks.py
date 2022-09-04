@@ -99,7 +99,9 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         if p_stats["scam_reason"]:
             guild_stats["scammers"] += 1
 
-        dungeon_types = player.profile.get("dungeons", {}).get("player_classes", {})
+        p_profile = player.profile if player.profile else {}
+
+        dungeon_types = p_profile.get("dungeons", {}).get("player_classes", {})
 
         player_metrics = {
             "uuid": player.uuid,
@@ -108,11 +110,11 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "senither_weight": player.senither_weight(),
             "lily_weight": lily_weight["total"],
 
-            "zombie_xp": player.profile.get("slayer_bosses", {}).get("zombie", {}).get("xp", 0),
-            "spider_xp": player.profile.get("slayer_bosses", {}).get("spider", {}).get("xp", 0),
-            "wolf_xp": player.profile.get("slayer_bosses", {}).get("wolf", {}).get("xp", 0),
-            "enderman_xp": player.profile.get("slayer_bosses", {}).get("enderman", {}).get("xp", 0),
-            "blaze_xp": player.profile.get("slayer_bosses", {}).get("blaze", {}).get("xp", 0),
+            "zombie_xp": p_profile.get("slayer_bosses", {}).get("zombie", {}).get("xp", 0),
+            "spider_xp": p_profile.get("slayer_bosses", {}).get("spider", {}).get("xp", 0),
+            "wolf_xp": p_profile.get("slayer_bosses", {}).get("wolf", {}).get("xp", 0),
+            "enderman_xp": p_profile.get("slayer_bosses", {}).get("enderman", {}).get("xp", 0),
+            "blaze_xp": p_profile.get("slayer_bosses", {}).get("blaze", {}).get("xp", 0),
 
             "catacombs_xp": player.catacombs_xp,
             "catacombs": player.catacombs_level,
@@ -128,22 +130,22 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "tank_xp": dungeon_types.get("tank", {}).get("experience", 0),
 
             "average_skill": player.average_skill,
-            "taming": player.get_skill_lvl("taming", player.profile.get("experience_skill_taming", 0)),
-            "taming_xp": player.profile.get("experience_skill_taming", 0),
-            "mining": player.get_skill_lvl("mining", player.profile.get("experience_skill_mining", 0)),
-            "mining_xp": player.profile.get("experience_skill_mining", 0),
-            "farming": player.get_skill_lvl("farming", player.profile.get("experience_skill_farming", 0)),
-            "farming_xp": player.profile.get("experience_skill_farming", 0),
-            "combat": player.get_skill_lvl("combat", player.profile.get("experience_skill_combat", 0)),
-            "combat_xp": player.profile.get("experience_skill_combat", 0),
-            "foraging": player.get_skill_lvl("foraging", player.profile.get("experience_skill_foraging", 0)),
-            "foraging_xp": player.profile.get("experience_skill_foraging", 0),
-            "fishing": player.get_skill_lvl("fishing", player.profile.get("experience_skill_fishing", 0)),
-            "fishing_xp": player.profile.get("experience_skill_fishing", 0),
-            "enchanting": player.get_skill_lvl("enchanting", player.profile.get("experience_skill_enchanting", 0)),
-            "enchanting_xp": player.profile.get("experience_skill_enchanting", 0),
-            "alchemy": player.get_skill_lvl("alchemy", player.profile.get("experience_skill_alchemy", 0)),
-            "alchemy_xp": player.profile.get("experience_skill_alchemy", 0),
+            "taming": player.get_skill_lvl("taming", p_profile.get("experience_skill_taming", 0)),
+            "taming_xp": p_profile.get("experience_skill_taming", 0),
+            "mining": player.get_skill_lvl("mining", p_profile.get("experience_skill_mining", 0)),
+            "mining_xp": p_profile.get("experience_skill_mining", 0),
+            "farming": player.get_skill_lvl("farming", p_profile.get("experience_skill_farming", 0)),
+            "farming_xp": p_profile.get("experience_skill_farming", 0),
+            "combat": player.get_skill_lvl("combat", p_profile.get("experience_skill_combat", 0)),
+            "combat_xp": p_profile.get("experience_skill_combat", 0),
+            "foraging": player.get_skill_lvl("foraging", p_profile.get("experience_skill_foraging", 0)),
+            "foraging_xp": p_profile.get("experience_skill_foraging", 0),
+            "fishing": player.get_skill_lvl("fishing", p_profile.get("experience_skill_fishing", 0)),
+            "fishing_xp": p_profile.get("experience_skill_fishing", 0),
+            "enchanting": player.get_skill_lvl("enchanting", p_profile.get("experience_skill_enchanting", 0)),
+            "enchanting_xp": p_profile.get("experience_skill_enchanting", 0),
+            "alchemy": player.get_skill_lvl("alchemy", p_profile.get("experience_skill_alchemy", 0)),
+            "alchemy_xp": p_profile.get("experience_skill_alchemy", 0),
         }
 
         await self.client.db.insert_new_player_metric(**player_metrics)
