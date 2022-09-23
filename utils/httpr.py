@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 from objects.api_objects import SkyBlockPlayer
 from objects.cache import RateLimitSession, Ratelimit, ratelimit_apis
 from objects.errors import *
+from aiohttp import ClientOSError, ClientPayloadError
+import asyncio
 
 if TYPE_CHECKING:
     from main import Client
@@ -115,11 +117,16 @@ class Httpr:
 
     @ratelimit_apis("api.hypixel.net", host_mapping=host_mapping)
     async def get_sb_player_data(self, uuid: str, ) -> dict:
-        async with self.session.get(f"https://api.hypixel.net/skyblock/profiles?uuid={uuid}") as r:
-            if r.status == 200:
-                return await r.json()
-            else:
-                raise UnexpectedResponse(f"Error getting sb_player_data {r.status}", r)
+        for i in range(5):
+            try:
+                async with self.session.get(f"https://api.hypixel.net/skyblock/profiles?uuid={uuid}") as r:
+                    if r.status == 200:
+                        return await r.json()
+                    else:
+                        raise UnexpectedResponse(f"Error getting sb_player_data {r.status}", r)
+            except (ClientOSError, ClientPayloadError):
+                self.client.logger.error(f"Error getting sb_player_data, retrying {i + 1}/5")
+                await asyncio.sleep(2)
 
     @ratelimit_apis(get_sb_player_data, host_mapping=host_mapping)
     async def get_profile(
