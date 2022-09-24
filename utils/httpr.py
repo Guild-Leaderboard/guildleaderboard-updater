@@ -184,5 +184,18 @@ class Httpr:
             else:
                 raise UnexpectedResponse("Error while checking scammers sbz", r)
 
-    async def log_updates(self, identifier: str, changes: dict) -> None:
-        return
+    @ratelimit_apis("nwapi.guildleaderboard.com", host_mapping=host_mapping)
+    async def get_networth(self, uuid: str, profile):
+        async with self.session.get(
+                f'https://nwapi.guildleaderboard.com/networth?uuid={uuid}', json={
+                    "profileData": profile["members"][uuid],
+                    "bankBalance": profile.get("banking", {}).get("balance", 0),
+                    "options": {
+                        "onlyNetworth": True,
+                    }
+                },
+        ) as r:
+            if r.status == 200:
+                return await r.json()
+            else:
+                raise UnexpectedResponse("Error while getting networth", r)

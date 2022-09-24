@@ -26,8 +26,7 @@ class Tasks:
         #         with open("history.json", "w") as f:
         #             json.dump([{key: str(value) if key == "capture_date" else value for key, value in dict(i).items()} for i in r], f, indent=4)
 
-        # self.client.loop.create_task(self.add_new_guild(guild_name="Cromax"))
-        # self.client.loop.create_task(self.find_new_guilds())
+        # self.client.loop.create_task(self.add_new_guild(guild_name="Sky Hub"))
 
         self.client.logger.info("Tasks started")
         return self
@@ -50,20 +49,27 @@ class Tasks:
             await asyncio.sleep(3600)
 
     async def get_player(self, guild_stats, uuid):
-        # r = await self.client.db.pool.fetchrow("""
-        # SELECT * FROM players WHERE uuid = $1 ORDER BY capture_date DESC LIMIT 1;
-        #             """, uuid)
-        #         if r and Time().datetime - r["capture_date"] <= datetime.timedelta(hours=3):
-        #             print("Not updating", uuid)
-        #             p_stats = dict(r)
-        #         else:
         player: SkyBlockPlayer = await self.client.httpr.get_profile(uuid=uuid, select_profile_on="weight")
+
+        if not player.profile:
+            networth = 0
+        else:
+            full_profile = [
+                profile for profile in player.player_data.get("profiles", []) if
+                profile["members"][uuid] == player.profile
+            ][0]
+            r = await self.client.httpr.get_networth(
+                uuid=uuid, profile=full_profile
+            )
+            networth = r["networth"]
+
         try:
             name = await player.get_name(self.client)
         except:
             name = (await self.client.db.pool.fetchrow("""
 SELECT name FROM players WHERE uuid=$1 LIMIT 1;            
             """, uuid))["name"]
+
         try:
             sbzscammer = await self.client.httpr.sbz_check_scammer(uuid)
         except:
@@ -88,6 +94,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "catacombs": player.catacombs_level,
             "total_slayer": player.slayer_xp,
             "scam_reason": scam_reason,
+            "networth": networth,
         }
         await self.client.db.insert_new_player(**p_stats)
         guild_stats["senither_weight"] += p_stats["senither_weight"]
@@ -95,6 +102,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         guild_stats["slayer"] += p_stats["total_slayer"]
         guild_stats["catacombs"] += p_stats["catacombs"]
         guild_stats["skills"] += p_stats["average_skill"]
+        guild_stats["networth"] += p_stats["networth"]
         guild_stats["count"] += 1
         if p_stats["scam_reason"]:
             guild_stats["scammers"] += 1
@@ -109,6 +117,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
 
             "senither_weight": player.senither_weight(),
             "lily_weight": lily_weight["total"],
+            "networth": networth,
 
             "zombie_xp": p_profile.get("slayer_bosses", {}).get("zombie", {}).get("xp", 0),
             "spider_xp": p_profile.get("slayer_bosses", {}).get("spider", {}).get("xp", 0),
@@ -179,6 +188,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "skills": 0,
             "scammers": 0,
             "count": 0,
+            "networth": 0,
         }
         # does_not_need_update_uuids = await self.client.db.does_not_need_update()
         # print(does_not_need_update_uuids)
@@ -221,6 +231,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             catacombs=new_guild_stats["catacombs"],
             slayer=new_guild_stats["slayer"],
             scammers=new_guild_stats["scammers"],
+            networth=new_guild_stats["networth"],
         )
         await self.add_guild_history(old_guild_members, new_guild_members, guild_data["_id"], guild_data["name"])
 

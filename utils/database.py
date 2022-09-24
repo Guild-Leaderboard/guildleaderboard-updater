@@ -31,7 +31,9 @@ CREATE TABLE guilds (
     slayer REAL,
     scammers SMALLINT,
     position_change SMALLINT,
-    lily_weight REAL
+    lily_weight REAL,
+    networth BIGINT
+
 )
 guilds.players is an aray of uuids
 
@@ -45,7 +47,8 @@ CREATE TABLE players (
     total_slayer REAL,
     capture_date TIMESTAMP,
     scam_reason TEXT,
-    lily_weight REAL
+    lily_weight REAL,
+    networth BIGINT
 )
 
 CREATE TABLE player_metrics (
@@ -55,6 +58,7 @@ CREATE TABLE player_metrics (
 
     senither_weight REAL,
     lily_weight REAL,
+    networth BIGINT,
 
     zombie_xp BIGINT,
     spider_xp BIGINT,
@@ -148,13 +152,13 @@ CREATE TABLE history (
 
     async def insert_new_guild(
             self, guild_id: str, guild_name: str, players: List[str], senither_weight: float, skills: float,
-            catacombs: float, slayer: float, scammers: int, lily_weight: float
+            catacombs: float, slayer: float, scammers: int, lily_weight: float, networth: int
     ):
         await self.pool.execute(
             """
-INSERT INTO guilds (guild_id, guild_name, capture_date, players, senither_weight, skills, catacombs, slayer, scammers, lily_weight)
-VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7, $8, $9)        
-        """, guild_id, guild_name, players, senither_weight, skills, catacombs, slayer, scammers, lily_weight
+INSERT INTO guilds (guild_id, guild_name, capture_date, players, senither_weight, skills, catacombs, slayer, scammers, lily_weight, networth)
+VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7, $8, $9, $10)        
+        """, guild_id, guild_name, players, senither_weight, skills, catacombs, slayer, scammers, lily_weight, networth
         )
 
     async def insert_new_player(self, **kwargs):

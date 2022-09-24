@@ -98,12 +98,6 @@ class RatelimitHandler:
                 "headers": {"API-Key": HYPIXEL_KEY},
                 "ratelimit_sync": True,
                 "exclude": ["/skyblock/auctions", "/skyblock/auctions_ended"],
-                # "/skyblock/auctions_ended", "/skyblock/bazaar",
-                #     "/resources/skyblock/bingo", "/resources/skyblock/election", "/resources/skyblock/items",
-                #     "/resources/skyblock/skills", "/resources/skyblock/collections", "/resources/vanity/companions",
-                #     "/resources/vanity/pets", "/resources/guilds/achievements", "/resources/quests",
-                #     "/resources/challenges", "/resources/achievements", "/resources/games"
-                # ]
             },
             "api.robothanzo.dev": {  # https://api.robothanzo.dev/
                 "max": 1000,  # max requests per minute
@@ -118,24 +112,12 @@ class RatelimitHandler:
                 "ratelimit_sync": False,
                 "exclude": [],
             },
-            # "hypixel-api.senither.com": {  # https://hypixel-skyblock-facade.senither.repl.co/
-            #     "max": 58,  # max requests per minute
-            #     "headers": {
-            #         "Authorization": HYPIXEL_KEY2
-            #     },
-            #     "ratelimit_sync": True,
-            #     "ratelimit_sync_remaining": False,
-            #     "exclude": [],
-            # },
-            # "hypixel-skyblock-facade.senither.repl.co": {  # https://hypixel-skyblock-facade.senither.repl.co/
-            #     "max": 58,  # max requests per minute
-            #     "headers": {
-            #         "Authorization": HYPIXEL_KEY3
-            #     },
-            #     "ratelimit_sync": True,
-            #     "ratelimit_sync_remaining": False,
-            #     "exclude": [],
-            # }
+            "nwapi.guildleaderboard.com": {  # https://api.hypixel.net/
+                "max": 1000,  # max requests per minute
+                "headers": {"authorization": "TIMNOOT_IS_AWESOME"},
+                "ratelimit_sync": False,
+                "exclude": [],
+            },
 
         }
         for key, value in self.rate_limits.items():
