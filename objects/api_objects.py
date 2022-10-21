@@ -281,10 +281,11 @@ class SkyBlockPlayer:
         if self.profile is None:
             return 0
         r = 0
-        for skill_type in self._senither_constants["skill_weight_groups"]:
+        used_skills = [*self._senither_constants["skill_weight_groups"], 'carpentry']
+        for skill_type in used_skills:
             experience = self.profile.get(f"experience_skill_{skill_type}", 0)
             r += self.get_skill_lvl(skill_type, experience)
-        return r / len(self._senither_constants["skill_weight_groups"])
+        return r / len(used_skills)
 
     def get_skill_lvl(self, skill_type, exp):
         max_level = self.skill_max_level[skill_type]

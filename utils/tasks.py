@@ -19,7 +19,7 @@ class Tasks:
     async def open(self):
         self.client.loop.create_task(self.delete_old_records())
         self.client.loop.create_task(self.resolve_names())
-        # self.client.loop.create_task(self.update_guilds())
+        self.client.loop.create_task(self.update_guilds())
         # r = await self.client.db.pool.fetch("""
         # SELECT * FROM history
         #         """)
@@ -155,6 +155,8 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "enchanting_xp": p_profile.get("experience_skill_enchanting", 0),
             "alchemy": player.get_skill_lvl("alchemy", p_profile.get("experience_skill_alchemy", 0)),
             "alchemy_xp": p_profile.get("experience_skill_alchemy", 0),
+            "carpentry": player.get_skill_lvl("carpentry", p_profile.get("experience_skill_carpentry", 0)),
+            "carpentry_xp": p_profile.get("experience_skill_carpentry", 0),
         }
 
         await self.client.db.insert_new_player_metric(**player_metrics)

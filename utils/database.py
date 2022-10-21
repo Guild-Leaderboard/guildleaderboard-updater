@@ -95,7 +95,9 @@ CREATE TABLE player_metrics (
     enchanting REAL,
     enchanting_xp BIGINT,
     alchemy REAL,
-    alchemy_xp BIGINT
+    alchemy_xp BIGINT,
+    carpentry REAL,
+    carpentry_xp BIGINT
 )
 
 CREATE TABLE guild_information (
