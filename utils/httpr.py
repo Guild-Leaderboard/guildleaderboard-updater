@@ -130,8 +130,8 @@ class Httpr:
                         return await r.json()
                     else:
                         raise UnexpectedResponse(f"Error getting sb_player_data {r.status}", r)
-            except (ClientOSError, ClientPayloadError):
-                self.client.logger.error(f"Error getting sb_player_data, retrying {i + 1}/5")
+            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+                self.client.logger.error(f"Error getting sb_player_data {e}, retrying {i + 1}/5")
                 await asyncio.sleep(2)
 
     @ratelimit_apis(get_sb_player_data, host_mapping=host_mapping)
