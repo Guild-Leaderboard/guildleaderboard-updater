@@ -32,7 +32,8 @@ CREATE TABLE guilds (
     scammers SMALLINT,
     position_change SMALLINT,
     lily_weight REAL,
-    networth BIGINT
+    networth BIGINT,
+    sb_experience BIGINT
 
 )
 guilds.players is an aray of uuids
@@ -48,7 +49,8 @@ CREATE TABLE players (
     capture_date TIMESTAMP,
     scam_reason TEXT,
     lily_weight REAL,
-    networth BIGINT
+    networth BIGINT,
+    sb_experience BIGINT
 )
 
 CREATE TABLE player_metrics (
@@ -59,6 +61,7 @@ CREATE TABLE player_metrics (
     senither_weight REAL,
     lily_weight REAL,
     networth BIGINT,
+    sb_experience BIGINT,
 
     zombie_xp BIGINT,
     spider_xp BIGINT,
@@ -154,13 +157,13 @@ CREATE TABLE history (
 
     async def insert_new_guild(
             self, guild_id: str, guild_name: str, players: List[str], senither_weight: float, skills: float,
-            catacombs: float, slayer: float, scammers: int, lily_weight: float, networth: int
+            catacombs: float, slayer: float, scammers: int, lily_weight: float, networth: int, sb_experience: int
     ):
         await self.pool.execute(
             """
-INSERT INTO guilds (guild_id, guild_name, capture_date, players, senither_weight, skills, catacombs, slayer, scammers, lily_weight, networth)
-VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7, $8, $9, $10)        
-        """, guild_id, guild_name, players, senither_weight, skills, catacombs, slayer, scammers, lily_weight, networth
+INSERT INTO guilds (guild_id, guild_name, capture_date, players, senither_weight, skills, catacombs, slayer, scammers, lily_weight, networth, sb_experience)
+VALUES ($1, $2, NOW(), $3, $4, $5, $6, $7, $8, $9, $10, $11)        
+        """, guild_id, guild_name, players, senither_weight, skills, catacombs, slayer, scammers, lily_weight, networth, sb_experience
         )
 
     async def insert_new_player(self, **kwargs):
@@ -219,3 +222,9 @@ VALUES ($1, $2, $3, {'$6' if capture_date else 'NOW()'}, $4, $5)
         r = await self.pool.fetch("""
 SELECT uuid, name FROM players WHERE uuid = ANY($1)""", uuids)
         return {row['uuid']: row['name'] for row in r}
+
+    async def insert_discord(self, guildid, discord):
+        r = await self.pool.execute("""
+INSERT INTO guild_information (guild_id, discord)      
+VALUES ($1, $2)
+        """, )

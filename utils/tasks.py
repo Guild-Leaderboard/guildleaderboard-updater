@@ -92,9 +92,11 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "lily_weight": lily_weight["total"],
             "average_skill": player.average_skill,
             "catacombs": player.catacombs_level,
+            'catacomb_xp': player.catacombs_xp,
             "total_slayer": player.slayer_xp,
             "scam_reason": scam_reason,
             "networth": networth,
+            "sb_experience": player.sb_experience,
         }
         await self.client.db.insert_new_player(**p_stats)
         guild_stats["senither_weight"] += p_stats["senither_weight"]
@@ -103,6 +105,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         guild_stats["catacombs"] += p_stats["catacombs"]
         guild_stats["skills"] += p_stats["average_skill"]
         guild_stats["networth"] += p_stats["networth"]
+        guild_stats["sb_experience"] += p_stats["sb_experience"]
         guild_stats["count"] += 1
         if p_stats["scam_reason"]:
             guild_stats["scammers"] += 1
@@ -118,6 +121,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "senither_weight": player.senither_weight(),
             "lily_weight": lily_weight["total"],
             "networth": networth,
+            "sb_experience": player.sb_experience,
 
             "zombie_xp": p_profile.get("slayer_bosses", {}).get("zombie", {}).get("xp", 0),
             "spider_xp": p_profile.get("slayer_bosses", {}).get("spider", {}).get("xp", 0),
@@ -191,6 +195,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "scammers": 0,
             "count": 0,
             "networth": 0,
+            "sb_experience": 0,
         }
         # does_not_need_update_uuids = await self.client.db.does_not_need_update()
         # print(does_not_need_update_uuids)
@@ -237,6 +242,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             slayer=new_guild_stats["slayer"],
             scammers=new_guild_stats["scammers"],
             networth=new_guild_stats["networth"],
+            sb_experience=new_guild_stats["sb_experience"],
         )
         await self.add_guild_history(old_guild_members, new_guild_members, guild_data["_id"], guild_data["name"])
 

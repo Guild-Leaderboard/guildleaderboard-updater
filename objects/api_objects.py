@@ -257,6 +257,10 @@ class SkyBlockPlayer:
             return 0
 
     @property
+    def sb_experience(self) -> int:
+        return int(self.profile.get("leveling", {}).get("experience", 0))
+
+    @property
     def gamemode(self) -> str:
         return self.profile.get("game_mode", "normal")
 
@@ -478,7 +482,8 @@ class SkyBlockPlayer:
             # Loop through all the skills lily weight uses
             if self.profile:
                 for skill_type in lilyweight.used_skills.keys():
-                    experience = self.profile.get(f"experience_skill_{skill_type}", 0)  # Get the experience of the skill
+                    experience = self.profile.get(f"experience_skill_{skill_type}",
+                                                  0)  # Get the experience of the skill
                     skill_experience_dict[skill_type] = experience  # Add the experience to the experience skill dict
                     skill_level_dict[skill_type] = lilyweight.get_level_from_XP(experience)
                     # Add the skill level to the counter

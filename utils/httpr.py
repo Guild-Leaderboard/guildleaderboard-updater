@@ -110,7 +110,7 @@ class Httpr:
 
     @ratelimit_apis("api.hypixel.net", host_mapping=host_mapping)
     async def get_player_data(self, uuid: str, ) -> dict:
-        for i in range(5):
+        for i in range(50):
             try:
                 async with self.session.get(f"https://api.hypixel.net/player?uuid={uuid}") as r:
                     if r.status == 200:
@@ -119,11 +119,11 @@ class Httpr:
                         raise UnexpectedResponse("Error while getting UUID", r)
             except (ClientOSError, ClientPayloadError):
                 self.client.logger.error(f"Error getting player_data, retrying {i + 1}/5")
-                await asyncio.sleep(2)
+                await asyncio.sleep(5)
 
     @ratelimit_apis("api.hypixel.net", host_mapping=host_mapping)
     async def get_sb_player_data(self, uuid: str, ) -> dict:
-        for i in range(5):
+        for i in range(50):
             try:
                 async with self.session.get(f"https://api.hypixel.net/skyblock/profiles?uuid={uuid}") as r:
                     if r.status == 200:
@@ -132,7 +132,7 @@ class Httpr:
                         raise UnexpectedResponse(f"Error getting sb_player_data {r.status}", r)
             except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
                 self.client.logger.error(f"Error getting sb_player_data {e}, retrying {i + 1}/5")
-                await asyncio.sleep(2)
+                await asyncio.sleep(5)
 
     @ratelimit_apis(get_sb_player_data, host_mapping=host_mapping)
     async def get_profile(
@@ -160,7 +160,7 @@ class Httpr:
             param = f"?name={name}"
         else:
             raise Exception("No parameters given")
-        for i in range(5):
+        for i in range(50):
             try:
                 async with self.session.get(f"https://api.hypixel.net/guild{param}") as r:
                     if r.status == 200:
@@ -174,7 +174,7 @@ class Httpr:
                         raise UnexpectedResponse("Error while getting Guild data", r)
             except (ClientOSError, ClientPayloadError):
                 self.client.logger.error(f"Error getting networth, retrying {i + 1}/5")
-                await asyncio.sleep(2)
+                await asyncio.sleep(5)
 
     @ratelimit_apis(get_guild_data, host_mapping=host_mapping)
     async def get_guild_members(self, *args, **kwargs) -> list:
@@ -188,7 +188,7 @@ class Httpr:
         #         "message": "Scammer not present in the database",
         #         "success": False
         #     }
-        for i in range(5):
+        for i in range(50):
             try:
                 async with self.session.get(f"https://api.robothanzo.dev/scammer/{uuid}?key={SBZ_KEY}") as r:
                     if r.status == 200:
@@ -197,11 +197,11 @@ class Httpr:
                         raise UnexpectedResponse("Error while checking scammers sbz", r)
             except (ClientOSError, ClientPayloadError):
                 self.client.logger.error(f"Error getting networth, retrying {i + 1}/5")
-                await asyncio.sleep(2)
+                await asyncio.sleep(5)
 
     @ratelimit_apis("nwapi.guildleaderboard.com", host_mapping=host_mapping)
     async def get_networth(self, uuid: str, profile):
-        for i in range(5):
+        for i in range(50):
             try:
                 async with self.session.get(
                         f'https://nwapi.guildleaderboard.com/networth?uuid={uuid}', json={
@@ -218,4 +218,4 @@ class Httpr:
                         raise UnexpectedResponse("Error while getting networth", r)
             except (ClientOSError, ClientPayloadError):
                 self.client.logger.error(f"Error getting networth, retrying {i + 1}/5")
-                await asyncio.sleep(2)
+                await asyncio.sleep(5)
