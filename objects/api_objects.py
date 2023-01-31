@@ -258,7 +258,10 @@ class SkyBlockPlayer:
 
     @property
     def sb_experience(self) -> int:
-        return int(self.profile.get("leveling", {}).get("experience", 0))
+        try:
+            return int(self.profile.get("leveling", {}).get("experience", 0))
+        except (KeyError, TypeError):
+            return 0
 
     @property
     def gamemode(self) -> str:

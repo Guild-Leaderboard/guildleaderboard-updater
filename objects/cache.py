@@ -182,11 +182,23 @@ class RatelimitHandler:
             api_d, headers = self.rate_limits[host], params.response.headers
             if not api_d["ratelimit_sync"]:
                 return
+            try:
+                seconds = float(headers.get("RateLimit-Reset") or headers.get("Retry-After"))
+                remaining = int(headers.get("RateLimit-Remaining") or headers.get("X-RateLimit-Remaining"))
+            except TypeError:
+                return
+
+            # if time.time() - request_time > seconds - 10:
+            #     print(time.time() - request_time, seconds)
+            #     return
+            if seconds <= 5 or remaining <= 10:
+                print(f"Not syncing {seconds}, {api_d['remaining']}, {remaining}")
+                return
 
             try:
                 if api_d.get("ratelimit_sync_remaining", True):
                     api_d["remaining"] = min(
-                        int(headers.get("RateLimit-Remaining") or headers.get("X-RateLimit-Remaining")),
+                        remaining,
                         api_d["remaining"]
                     )
                 seconds = float(headers.get("RateLimit-Reset") or headers.get("Retry-After"))

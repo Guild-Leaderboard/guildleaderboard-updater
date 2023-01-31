@@ -280,7 +280,7 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
         old_guilds = [self.client.db.format_json(i) for i in (await self.client.db.pool.fetch("""
     SELECT DISTINCT ON (guild_id) guild_id,
                           guild_name,
-                          senither_weight,
+                          sb_experience,
                           array_length(players, 1) AS players                      
     FROM guilds
         WHERE Now() - capture_date >=  '3 days'
@@ -289,16 +289,16 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
         current_guilds = [self.client.db.format_json(i) for i in (await self.client.db.pool.fetch("""
     SELECT DISTINCT ON (guild_id) guild_id,
                           guild_name,
-                          senither_weight,
+                          sb_experience,
                           array_length(players, 1) AS players                       
     FROM guilds
     ORDER BY guild_id, capture_date DESC;    
         """))]
 
         current_guilds_sorted = sorted(current_guilds,
-                                       key=lambda x: x["senither_weight"] * weight_multiplier(x["players"]),
+                                       key=lambda x: x["sb_experience"] * weight_multiplier(x["players"]),
                                        reverse=True)
-        old_guilds_sorted = sorted(old_guilds, key=lambda x: x["senither_weight"] * weight_multiplier(x["players"]),
+        old_guilds_sorted = sorted(old_guilds, key=lambda x: x["sb_experience"] * weight_multiplier(x["players"]),
                                    reverse=True)
 
         old_guild_positions = {d["guild_id"]: i + 1 for i, d in enumerate(old_guilds_sorted)}
