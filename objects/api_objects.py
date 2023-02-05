@@ -218,29 +218,28 @@ class SkyBlockPlayer:
         pass
 
     @staticmethod
-    def get_cata_lvl(exp):
+    def get_cata_lvl(exp, overflow=False):
         levels = {
-            '1': 50, '2': 125, '3': 235, '4': 395, '5': 625, '6': 955, '7': 1425, '8': 2095, '9': 3045,
-            '10': 4385, '11': 6275, '12': 8940, '13': 12700, '14': 17960, '15': 25340, '16': 35640,
-            '17': 50040, '18': 70040, '19': 97640, '20': 135640, '21': 188140, '22': 259640, '23': 356640,
-            '24': 488640, '25': 668640, '26': 911640, '27': 1239640, '28': 1684640, '29': 2284640,
-            '30': 3084640, '31': 4149640, '32': 5559640, '33': 7459640, '34': 9959640, '35': 13259640,
-            '36': 17559640, '37': 23159640, '38': 30359640, '39': 39559640, '40': 51559640, '41': 66559640,
-            '42': 85559640, '43': 109559640, '44': 139559640, '45': 177559640, '46': 225559640,
-            '47': 285559640, '48': 360559640, '49': 453559640, '50': 569809640
+            1: 50, 2: 75, 3: 110, 4: 160, 5: 230, 6: 330, 7: 470, 8: 670, 9: 950, 10: 1340, 11: 1890, 12: 2665,
+            13: 3760, 14: 5260, 15: 7380, 16: 10300, 17: 14400, 18: 20000, 19: 27600, 20: 38000, 21: 52500, 22: 71500,
+            23: 97000, 24: 132000, 25: 180000, 26: 243000, 27: 328000, 28: 445000, 29: 600000, 30: 800000, 31: 1065000,
+            32: 1410000, 33: 1900000, 34: 2500000, 35: 3300000, 36: 4300000, 37: 5600000, 38: 7200000, 39: 9200000,
+            40: 12000000, 41: 15000000, 42: 19000000, 43: 24000000, 44: 30000000, 45: 38000000, 46: 48000000,
+            47: 60000000, 48: 75000000, 49: 93000000, 50: 116250000,
         }
-        for level in levels:
-            if exp >= levels["50"]:
-                return 50
-            if levels[level] > exp:
-                if int(level) == 1:
-                    level = str(2)
-                lowexp = levels[str(int(level) - 1)]
-                highexp = levels[level]
-                difference = highexp - lowexp
-                extra = exp - lowexp
-                percentage = (extra / difference)
-                return (int(level) - 1) + percentage
+        # > 50 200 000 000 per level
+        # levels dict is incremental
+        remaining_xp = exp
+
+        for lvl, xp in levels.items():
+            if lvl >= 50:
+                return lvl + (remaining_xp - xp) / 200000000 if overflow else 50
+
+            if remaining_xp < xp:
+                decimal = remaining_xp / xp
+                return lvl + decimal - 1
+            remaining_xp -= xp
+        return 0
 
     @property
     def last_save(self):
@@ -276,6 +275,10 @@ class SkyBlockPlayer:
     @property
     def catacombs_level(self) -> float:
         return self.get_cata_lvl(self.catacombs_xp)
+
+    @property
+    def catacombs_level_overflow(self) -> float:
+        return self.get_cata_lvl(self.catacombs_xp, overflow=True)
 
     @property
     def slayer_xp(self) -> float:

@@ -91,7 +91,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "senither_weight": player.senither_weight(),
             "lily_weight": lily_weight["total"],
             "average_skill": player.average_skill,
-            "catacombs": player.catacombs_level,
+            "catacombs": player.catacombs_level_overflow,
             'catacomb_xp': player.catacombs_xp,
             "total_slayer": player.slayer_xp,
             "scam_reason": scam_reason,
@@ -130,7 +130,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "blaze_xp": p_profile.get("slayer_bosses", {}).get("blaze", {}).get("xp", 0),
 
             "catacombs_xp": player.catacombs_xp,
-            "catacombs": player.catacombs_level,
+            "catacombs": player.catacombs_level_overflow,
             "healer": player.get_cata_lvl(dungeon_types.get("healer", {}).get("experience", 0)),
             "healer_xp": dungeon_types.get("healer", {}).get("experience", 0),
             "mage": player.get_cata_lvl(dungeon_types.get("mage", {}).get("experience", 0)),
