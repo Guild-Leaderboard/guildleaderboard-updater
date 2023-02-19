@@ -230,11 +230,12 @@ class SkyBlockPlayer:
         # > 50 200 000 000 per level
         # levels dict is incremental
         remaining_xp = exp
+        level50 = sum(levels.values())
+
+        if exp >= level50:
+            return 50 + (exp - level50) / 200000000 if overflow else 50
 
         for lvl, xp in levels.items():
-            if lvl >= 50:
-                return lvl + (remaining_xp - xp) / 200000000 if overflow else 50
-
             if remaining_xp < xp:
                 decimal = remaining_xp / xp
                 return lvl + decimal - 1
@@ -245,21 +246,21 @@ class SkyBlockPlayer:
     def last_save(self):
         try:
             return self.profile["last_save"]
-        except (KeyError, TypeError):
+        except:
             return 0
 
     @property
     def catacombs_xp(self) -> float:
         try:
             return self.profile["dungeons"]["dungeon_types"]["catacombs"]["experience"]
-        except (KeyError, TypeError):
+        except:
             return 0
 
     @property
     def sb_experience(self) -> int:
         try:
             return int(self.profile.get("leveling", {}).get("experience", 0))
-        except (KeyError, TypeError):
+        except:
             return 0
 
     @property

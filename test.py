@@ -10,11 +10,12 @@ def get_cata_lvl(exp, overflow=False):
     # > 50 200 000 000 per level
     # levels dict is incremental
     remaining_xp = exp
+    level50 = sum(levels.values())
+
+    if exp >= level50:
+        return 50 + (exp - level50) / 200000000 if overflow else 50
 
     for lvl, xp in levels.items():
-        if lvl >= 50:
-            return lvl + (remaining_xp - xp) / 200000000 if overflow else 50
-
         if remaining_xp < xp:
             decimal = remaining_xp / xp
             return lvl + decimal - 1
@@ -22,5 +23,7 @@ def get_cata_lvl(exp, overflow=False):
     return 0
 
 
-val = 969899641
-print(get_cata_lvl(val, True))
+val = 1212044402  # 53.21
+# val = 488320172  # 49.31
+
+print(get_cata_lvl(val, overflow=False))

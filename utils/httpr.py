@@ -117,8 +117,8 @@ class Httpr:
                         return await r.json()
                     else:
                         raise UnexpectedResponse("Error while getting UUID", r)
-            except (ClientOSError, ClientPayloadError):
-                self.client.logger.error(f"Error getting player_data, retrying {i + 1}/5")
+            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+                self.client.logger.error(f"Error getting player_data {e}, retrying {i + 1}/5")
                 await asyncio.sleep(5)
 
     @ratelimit_apis("api.hypixel.net", host_mapping=host_mapping)
@@ -131,7 +131,7 @@ class Httpr:
                     else:
                         raise UnexpectedResponse(f"Error getting sb_player_data {r.status}", r)
             except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
-                self.client.logger.error(f"Error getting sb_player_data {e}, retrying {i + 1}/5")
+                self.client.logger.error(f"Error getting sb_player_data {e}, retrying {i + 1}/50")
                 await asyncio.sleep(5)
 
     @ratelimit_apis(get_sb_player_data, host_mapping=host_mapping)
@@ -171,9 +171,10 @@ class Httpr:
                             raise GuildNotFound("Guild not found", name)
                         return rj
                     else:
+                        print(await r.json())
                         raise UnexpectedResponse("Error while getting Guild data", r)
-            except (ClientOSError, ClientPayloadError):
-                self.client.logger.error(f"Error getting networth, retrying {i + 1}/5")
+            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+                self.client.logger.error(f"Error getting networth {e}, retrying {i + 1}/50")
                 await asyncio.sleep(5)
 
     @ratelimit_apis(get_guild_data, host_mapping=host_mapping)
@@ -216,6 +217,6 @@ class Httpr:
                         return await r.json()
                     else:
                         raise UnexpectedResponse("Error while getting networth", r)
-            except (ClientOSError, ClientPayloadError):
-                self.client.logger.error(f"Error getting networth, retrying {i + 1}/5")
+            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+                self.client.logger.error(f"Error getting networth {e}, retrying {i + 1}/50")
                 await asyncio.sleep(5)
