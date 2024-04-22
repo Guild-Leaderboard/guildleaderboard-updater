@@ -23,7 +23,5 @@ def get_cata_lvl(exp, overflow=False):
     return 0
 
 
-val = 1212044402  # 53.21
-# val = 488320172  # 49.31
 
 print(get_cata_lvl(val, overflow=False))

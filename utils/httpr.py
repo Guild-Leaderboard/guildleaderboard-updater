@@ -184,21 +184,25 @@ class Httpr:
 
     @ratelimit_apis("api.robothanzo.dev", host_mapping=host_mapping)
     async def sbz_check_scammer(self, uuid: str = None) -> dict:
+        return {
+            "message": "Scammer not present in the database",
+            "success": False
+        }
         # if uuid in self.ignore_scammer_check:
         #     return {
         #         "message": "Scammer not present in the database",
         #         "success": False
         #     }
-        for i in range(50):
-            try:
-                async with self.session.get(f"https://api.robothanzo.dev/scammer/{uuid}?key={SBZ_KEY}") as r:
-                    if r.status == 200:
-                        return await r.json()
-                    else:
-                        raise UnexpectedResponse("Error while checking scammers sbz", r)
-            except (ClientOSError, ClientPayloadError):
-                self.client.logger.error(f"Error getting networth, retrying {i + 1}/5")
-                await asyncio.sleep(5)
+        # for i in range(50):
+        #     try:
+        #         async with self.session.get(f"https://api.robothanzo.dev/scammer/{uuid}?key={SBZ_KEY}") as r:
+        #             if r.status == 200:
+        #                 return await r.json()
+        #             else:
+        #                 raise UnexpectedResponse("Error while checking scammers sbz", r)
+        #     except (ClientOSError, ClientPayloadError):
+        #         self.client.logger.error(f"Error getting networth, retrying {i + 1}/5")
+        #         await asyncio.sleep(5)
 
     @ratelimit_apis("nwapi.guildleaderboard.com", host_mapping=host_mapping)
     async def get_networth(self, uuid: str, profile):

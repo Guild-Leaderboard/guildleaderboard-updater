@@ -28,7 +28,7 @@ class SkyBlockPlayer:
         - slayer
         """
         self._name, self._weight_with_overflow, self._weight_without_overflow, self.profile, self.gexp, _selected_profile_name = (
-                                                                                                                                     None,) * 6
+                                                                                                                                 None,) * 6
 
         self.select_profile(profile_id, profile_name, select_profile_on)
 
@@ -109,7 +109,7 @@ class SkyBlockPlayer:
                 "taming": {
                     "exponent": 1.14744,
                     "divider": 441379,
-                    "maxLevel": 50,
+                    "maxLevel": 60,
                 },
                 # Sets up carpentry and runecrafting without any weight components.
                 "carpentry": {
@@ -132,7 +132,7 @@ class SkyBlockPlayer:
             "combat": 60,
             "fishing": 50,
             "alchemy": 50,
-            "taming": 50,
+            "taming": 60,
             "carpentry": 50,
             "runecrafting": 25,
         }
@@ -213,9 +213,6 @@ class SkyBlockPlayer:
             return self._name
         self._name = await app.httpr.get_name(self.uuid)
         return self._name
-
-    async def get_player(self, uuid):
-        pass
 
     @staticmethod
     def get_cata_lvl(exp, overflow=False):
@@ -345,7 +342,8 @@ class SkyBlockPlayer:
         return math.floor(base) + math.pow(remaining / splitter, 0.968) if with_overflow else math.floor(base)
 
     def senither_dungeon_weight(self, with_overflow: bool = True):
-        if self.profile is None or self.profile.get("dungeons") is None:
+        if self.profile is None or self.profile.get("dungeons") is None or self.profile.get("dungeons").get(
+                "player_classes") is None:
             return 0
         return sum(
             self._senither_calculate_dungeon_weight(
@@ -495,6 +493,7 @@ class SkyBlockPlayer:
                     skill_level_dict[skill_type] = lilyweight.get_level_from_XP(experience)
                     # Add the skill level to the counter
 
+        slayer_kwargs.pop("vampire", None)
         return LilyWeight.get_weight_raw(
             skill_level_dict, skill_experience_dict, cata_completions, m_cata_compl, cata_xp, **slayer_kwargs
         )

@@ -17,16 +17,16 @@ class Tasks:
         self.client: Client = client
 
     async def open(self):
-        self.client.loop.create_task(self.delete_old_records())
-        self.client.loop.create_task(self.resolve_names())
-        self.client.loop.create_task(self.update_guilds())
+        # self.client.loop.create_task(self.delete_old_records())
+        # self.client.loop.create_task(self.resolve_names())
+        # self.client.loop.create_task(self.update_guilds())
         # r = await self.client.db.pool.fetch("""
         # SELECT * FROM history
         #         """)
         #         with open("history.json", "w") as f:
         #             json.dump([{key: str(value) if key == "capture_date" else value for key, value in dict(i).items()} for i in r], f, indent=4)
 
-        # self.client.loop.create_task(self.add_new_guild(guild_name="DragonSin"))
+        self.client.loop.create_task(self.add_new_guild(guild_name="Menhir"))  # Drachen Jaeger 3
 
         self.client.logger.info("Tasks started")
         return self

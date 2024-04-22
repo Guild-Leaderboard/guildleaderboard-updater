@@ -94,9 +94,9 @@ class RatelimitHandler:
                 "exclude": [],
             },
             "api.hypixel.net": {  # https://api.hypixel.net/
-                "max": 60,  # max requests per minute
+                "max": 100,  # max requests per minute
                 "headers": {"API-Key": HYPIXEL_KEY},
-                "ratelimit_sync": True,
+                "ratelimit_sync": False,
                 "exclude": ["/skyblock/auctions", "/skyblock/auctions_ended"],
             },
             "api.robothanzo.dev": {  # https://api.robothanzo.dev/
