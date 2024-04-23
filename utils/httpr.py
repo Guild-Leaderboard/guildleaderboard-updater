@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from typing import TYPE_CHECKING
 
 from aiohttp import ClientOSError, ClientPayloadError
@@ -12,8 +11,6 @@ from objects.errors import *
 
 if TYPE_CHECKING:
     from main import Client
-
-SBZ_KEY = os.getenv("SBZ_KEY")
 
 
 class Httpr:
@@ -112,7 +109,7 @@ class Httpr:
     async def get_player_data(self, uuid: str, ) -> dict:
         for i in range(50):
             try:
-                async with self.session.get(f"https://api.hypixel.net/player?uuid={uuid}") as r:
+                async with self.session.get(f"https://api.hypixel.net/v2/player?uuid={uuid}") as r:
                     if r.status == 200:
                         return await r.json()
                     else:
@@ -125,7 +122,7 @@ class Httpr:
     async def get_sb_player_data(self, uuid: str, ) -> dict:
         for i in range(50):
             try:
-                async with self.session.get(f"https://api.hypixel.net/skyblock/profiles?uuid={uuid}") as r:
+                async with self.session.get(f"https://api.hypixel.net/v2/skyblock/profiles?uuid={uuid}") as r:
                     if r.status == 200:
                         return await r.json()
                     else:
@@ -138,15 +135,13 @@ class Httpr:
     async def get_profile(
             self, uuid: str,
             profile_id: str = None,
-            profile_name: str = None,
-            select_profile_on: str = "last_save",
+            profile_name: str = None
     ) -> SkyBlockPlayer:
         return SkyBlockPlayer(
             uuid,
             await self.get_sb_player_data(uuid),
             profile_id,
             profile_name,
-            select_profile_on,
         )
 
     @ratelimit_apis("api.hypixel.net", host_mapping=host_mapping)
@@ -162,7 +157,7 @@ class Httpr:
             raise Exception("No parameters given")
         for i in range(50):
             try:
-                async with self.session.get(f"https://api.hypixel.net/guild{param}") as r:
+                async with self.session.get(f"https://api.hypixel.net/v2/guild{param}") as r:
                     if r.status == 200:
                         rj = await r.json()
                         if not rj["guild"] and uuid:
@@ -181,28 +176,6 @@ class Httpr:
     async def get_guild_members(self, *args, **kwargs) -> list:
         guild_data = await self.get_guild_data(*args, **kwargs)
         return [i["uuid"] for i in guild_data["guild"]["members"]]
-
-    @ratelimit_apis("api.robothanzo.dev", host_mapping=host_mapping)
-    async def sbz_check_scammer(self, uuid: str = None) -> dict:
-        return {
-            "message": "Scammer not present in the database",
-            "success": False
-        }
-        # if uuid in self.ignore_scammer_check:
-        #     return {
-        #         "message": "Scammer not present in the database",
-        #         "success": False
-        #     }
-        # for i in range(50):
-        #     try:
-        #         async with self.session.get(f"https://api.robothanzo.dev/scammer/{uuid}?key={SBZ_KEY}") as r:
-        #             if r.status == 200:
-        #                 return await r.json()
-        #             else:
-        #                 raise UnexpectedResponse("Error while checking scammers sbz", r)
-        #     except (ClientOSError, ClientPayloadError):
-        #         self.client.logger.error(f"Error getting networth, retrying {i + 1}/5")
-        #         await asyncio.sleep(5)
 
     @ratelimit_apis("nwapi.guildleaderboard.com", host_mapping=host_mapping)
     async def get_networth(self, uuid: str, profile):

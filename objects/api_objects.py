@@ -8,29 +8,21 @@ from lilyweight import LilyWeight
 
 
 class SkyBlockPlayer:
-    def __init__(
-            self, uuid: str, player_data: dict = None, profile_id: str = None, profile_name: str = None,
-            select_profile_on: str = "last_save"
-    ):
+    def __init__(self, uuid: str, player_data: dict = None, profile_id: str = None, profile_name: str = None):
         self.uuid = uuid
         self.player_data = player_data
+
         if player_data.get("profiles"):
             for profile in player_data["profiles"]:
                 if self.uuid not in profile["members"]:
                     self.player_data["profiles"].remove(profile)
 
-        """
-        select_profile_on can be one of the following:
-        - last_save
-        - senither_weight
-        - lily_weight
-        - cata
-        - slayer
-        """
-        self._name, self._weight_with_overflow, self._weight_without_overflow, self.profile, self.gexp, _selected_profile_name = (
-                                                                                                                                 None,) * 6
+        self._name = None
+        self._player_data = None
+        self._weight_with_overflow = None
 
-        self.select_profile(profile_id, profile_name, select_profile_on)
+        self.member_profile = None
+        self.cute_name = None
 
         self._senither_constants = {
             "dungeons_level50_experience": 569809640,
@@ -109,7 +101,7 @@ class SkyBlockPlayer:
                 "taming": {
                     "exponent": 1.14744,
                     "divider": 441379,
-                    "maxLevel": 60,
+                    "maxLevel": 50,
                 },
                 # Sets up carpentry and runecrafting without any weight components.
                 "carpentry": {
@@ -123,7 +115,6 @@ class SkyBlockPlayer:
                 'mining', 'foraging', 'enchanting', 'farming', 'combat', 'fishing', 'alchemy', 'taming'
             ],
         }
-
         self.skill_max_level = {
             "mining": 60,
             "foraging": 50,
@@ -132,27 +123,33 @@ class SkyBlockPlayer:
             "combat": 60,
             "fishing": 50,
             "alchemy": 50,
-            "taming": 60,
+            "taming": 50,
             "carpentry": 50,
             "runecrafting": 25,
         }
+        self._used_average_skills = [
+            'mining', 'foraging', 'enchanting', 'farming', 'combat', 'fishing', 'alchemy', 'taming', 'carpentry'
+        ]
 
-    def _selected_profile(
-            self, profile_id: str = None, profile_name: str = None, select_profile_on: str = "last_save"
-    ) -> dict:
+        self.select_profile(profile_id, profile_name)
+
+    def select_profile(self, profile_id: str = None, profile_name: str = None):
         if self.player_data["profiles"] is None:
-            self.selected_profile_name = None
             return None
+
         if profile_id:
             for profile in self.player_data["profiles"]:
                 if profile["profile_id"] == profile_id:  # and self.uuid in profile["members"]:
-                    self.selected_profile_name = profile["cute_name"]
-                    return profile["members"][self.uuid]
+                    self.member_profile = profile["members"][self.uuid]
+                    self.cute_name = profile["cute_name"]
+                    return self.member_profile
+
         if profile_name:
             for profile in self.player_data["profiles"]:
                 if profile["cute_name"] == profile_name:
-                    self.selected_profile_name = profile["cute_name"]
-                    return profile["members"][self.uuid]
+                    self.member_profile = profile["members"][self.uuid]
+                    self.cute_name = profile["cute_name"]
+                    return self.member_profile
 
         profiles = []
         for profile in self.player_data["profiles"]:
@@ -162,51 +159,12 @@ class SkyBlockPlayer:
             except KeyError:
                 continue
 
-        if select_profile_on == "last_save":
-            found_profile = sorted(profiles, key=lambda x: x.get("last_save", 0), reverse=True)[0]
+        self.member_profile = sorted(profiles, key=lambda x: x.get("leveling", {}).get("experience", 0), reverse=True)[
+            0]
+        self.cute_name = self.member_profile["cute_name"]
 
-        elif select_profile_on == "weight":
-            try:
-                found_profile = sorted(
-                    self.player_data["profiles"],
-                    key=lambda x: SkyBlockPlayer(self.uuid, self.player_data, x["profile_id"]).senither_weight(),
-                    reverse=True
-                )[0]["members"][self.uuid]
-            except IndexError:
-                self.selected_profile_name = None
-                return None
-
-        elif select_profile_on == "cata":
-            found_profile = sorted(
-                profiles,
-                key=lambda x: x.get("dungeons", {}).get("dungeon_types", {}).get("catacombs", {}).get("experience", 0),
-                reverse=True
-            )[0]
-        elif select_profile_on == "slayer":
-            found_profile = sorted(
-                profiles,
-                key=lambda x: sum([i.get("xp", 0) for i in x.get("slayer_bosses", {}).values()]),
-                reverse=True
-            )[0]
-        else:
-            raise ValueError(f"Invalid select_profile_on: {select_profile_on}")
-
-        self.selected_profile_name = found_profile["cute_name"]
-        return found_profile
-
-    def select_profile(self, profile_id: str = None, profile_name: str = None, select_profile_on: str = "last_save"):
-        """
-        select_profile_on can be one of the following:
-        - last_save
-        - senither_weight
-        - lily_weight
-        - cata
-        - slayer
-        """
-
-        self.profile = self._selected_profile(profile_id, profile_name, select_profile_on)
-        self._weight_with_overflow, self._weight_without_overflow = None, None
-        return self
+        self._weight_with_overflow = None
+        return self.member_profile
 
     async def get_name(self, app) -> str:
         if self._name:
@@ -214,8 +172,14 @@ class SkyBlockPlayer:
         self._name = await app.httpr.get_name(self.uuid)
         return self._name
 
+    async def get_player_data(self, app) -> str:
+        if self._player_data:
+            return self._player_data
+        self._player_data = await app.httpr.get_player_data(self.uuid)
+        return self._player_data
+
     @staticmethod
-    def get_cata_lvl(exp, overflow=False):
+    def get_cata_lvl(exp, overflow=True):
         levels = {
             1: 50, 2: 75, 3: 110, 4: 160, 5: 230, 6: 330, 7: 470, 8: 670, 9: 950, 10: 1340, 11: 1890, 12: 2665,
             13: 3760, 14: 5260, 15: 7380, 16: 10300, 17: 14400, 18: 20000, 19: 27600, 20: 38000, 21: 52500, 22: 71500,
@@ -240,39 +204,22 @@ class SkyBlockPlayer:
         return 0
 
     @property
-    def last_save(self):
-        try:
-            return self.profile["last_save"]
-        except:
-            return 0
-
-    @property
     def catacombs_xp(self) -> float:
         try:
-            return self.profile["dungeons"]["dungeon_types"]["catacombs"]["experience"]
+            return self.member_profile["dungeons"]["dungeon_types"]["catacombs"]["experience"]
         except:
             return 0
 
     @property
     def sb_experience(self) -> int:
         try:
-            return int(self.profile.get("leveling", {}).get("experience", 0))
+            return int(self.member_profile.get("leveling", {}).get("experience", 0))
         except:
             return 0
 
     @property
-    def gamemode(self) -> str:
-        return self.profile.get("game_mode", "normal")
-
-    def has_gamemode(self, game_mode: str) -> bool:
-        for profile in self.player_data["profiles"]:
-            if profile.get("game_mode", "normal") == game_mode:
-                return True
-        return False
-
-    @property
     def catacombs_level(self) -> float:
-        return self.get_cata_lvl(self.catacombs_xp)
+        return self.get_cata_lvl(self.catacombs_xp, overflow=False)
 
     @property
     def catacombs_level_overflow(self) -> float:
@@ -280,23 +227,39 @@ class SkyBlockPlayer:
 
     @property
     def slayer_xp(self) -> float:
-        if self.profile and self.profile.get("slayer_bosses") is not None:
-            return sum([i.get("xp", 0) for i in self.profile.get("slayer_bosses", {}).values()])
+        if self.member_profile and self.member_profile.get("slayer") is not None:
+            return sum([i.get("xp", 0) for i in self.member_profile["slayer"].get("slayer_bosses", {}).values()])
         return 0
 
-    @property
-    def average_skill(self):
-        if self.profile is None:
+    async def average_skill(self, app=None):
+        if (
+                self.member_profile is None or
+                self.member_profile.get("player_data") is None or
+                self.member_profile["player_data"].get("experience") is None
+        ):
             return 0
-        r = 0
-        used_skills = [*self._senither_constants["skill_weight_groups"], 'carpentry']
-        for skill_type in used_skills:
-            experience = self.profile.get(f"experience_skill_{skill_type}", 0)
-            r += self.get_skill_lvl(skill_type, experience)
-        return r / len(used_skills)
 
-    def get_skill_lvl(self, skill_type, exp):
-        max_level = self.skill_max_level[skill_type]
+        taming_cap = 50
+        # find taming cap
+        if app:
+            player_data = await self.get_player_data(app)
+            try:
+                taming_cap = player_data["player"]["achievements"].get("skyblock_domesticator", 50)
+            except:
+                pass
+
+        total_skills = 0
+        for skill_type in self._used_average_skills:
+            experience = self.member_profile["player_data"]["experience"].get(f"SKILL_{skill_type.upper()}", 0)
+            total_skills += self.get_skill_lvl(
+                skill_type, experience, given_max_level=None if skill_type != "taming" else taming_cap
+            )
+
+        return total_skills / len(self._used_average_skills)
+
+    def get_skill_lvl(self, skill_type, exp, given_max_level=None):
+        # max_level = self.skill_max_level[skill_type] if given_max_level is None else given_max_level
+        max_level = given_max_level if given_max_level else self.skill_max_level[skill_type]
         levels = {
             "0": 0, "1": 50, "2": 175, "3": 375, "4": 675, "5": 1175, "6": 1925, "7": 2925, "8": 4425, "9": 6425,
             "10": 9925, "11": 14925, "12": 22425, "13": 32425, "14": 47425, "15": 67425, "16": 97425, "17": 147425,
@@ -323,6 +286,7 @@ class SkyBlockPlayer:
 
     def _senither_calculate_dungeon_weight(self, weight_type: str, level: int, experience: int,
                                            with_overflow: bool = True):
+
         percentage_modifier = self._senither_constants["dungeon_weights"][weight_type]
 
         # Calculates the base weight using the players level
@@ -342,14 +306,18 @@ class SkyBlockPlayer:
         return math.floor(base) + math.pow(remaining / splitter, 0.968) if with_overflow else math.floor(base)
 
     def senither_dungeon_weight(self, with_overflow: bool = True):
-        if self.profile is None or self.profile.get("dungeons") is None or self.profile.get("dungeons").get(
-                "player_classes") is None:
+        if self.member_profile is None or self.member_profile.get("dungeons") is None or self.member_profile.get(
+                "dungeons").get(
+            "player_classes") is None:
             return 0
+        cata_weight = self._senither_calculate_dungeon_weight("catacombs", self.catacombs_level, self.catacombs_xp,
+                                                              with_overflow)
         return sum(
             self._senither_calculate_dungeon_weight(
-                cls_data, self.get_cata_lvl(exp.get("experience", 0)), exp.get("experience", 0), with_overflow
-            ) for cls_data, exp in self.profile["dungeons"]["player_classes"].items()
-        ) + self._senither_calculate_dungeon_weight("catacombs", self.catacombs_level, self.catacombs_xp, with_overflow)
+                cls_data, self.get_cata_lvl(exp.get("experience", 0), overflow=False), exp.get("experience", 0),
+                with_overflow
+            ) for cls_data, exp in self.member_profile["dungeons"]["player_classes"].items()
+        ) + cata_weight
 
     def _senither_calculate_slayer_weight(self, weight_type: str, experience: int, with_overflow: bool = True):
         slayer_weight = self._senither_constants["slayer_weights"].get(weight_type)
@@ -375,12 +343,18 @@ class SkyBlockPlayer:
         return base + overflow if with_overflow else base
 
     def senither_slayer_weight(self, with_overflow: bool = True):
-        if self.profile is None or self.profile.get("slayer_bosses") is None:
+        if (
+                self.member_profile is None or
+                self.member_profile.get("slayer") is None or
+                self.member_profile["slayer"].get("slayer_bosses") is None
+        ):
             return 0
+
         return sum(
             self._senither_calculate_slayer_weight(
                 slayer_type,
-                self.profile["slayer_bosses"].get(slayer_type, {}).get("xp", 0) if self.profile else 0,
+                self.member_profile["slayer"]["slayer_bosses"].get(slayer_type, {}).get("xp",
+                                                                                        0) if self.member_profile else 0,
                 with_overflow
             )
             for slayer_type in self._senither_constants["slayer_weights"].keys()
@@ -412,31 +386,38 @@ class SkyBlockPlayer:
             else base
 
     def senither_skill_weight(self, with_overflow: bool = True):
-        if self.profile is None:
+        if (
+                self.member_profile is None or
+                self.member_profile.get("player_data") is None or
+                self.member_profile["player_data"].get("experience") is None
+        ):
             return 0
 
-        r = 0
-        for skill_type in self._senither_constants["skill_weights"].keys():
+        skill_weight = 0
+        for skill_type, value in self._senither_constants["skill_weights"].items():
             if skill_type in self._senither_constants["skill_weight_groups"]:
-                experience = self.profile.get(f"experience_skill_{skill_type}", 0)
-                r += self._senither_calculate_skill_weight(
-                    skill_type, self.get_skill_lvl(skill_type, experience), experience, with_overflow
-                )
-        return r
+                senither_old_max_level_cap = value["maxLevel"]
+                experience = self.member_profile["player_data"]["experience"].get(f"SKILL_{skill_type.upper()}", 0)
 
-    def senither_weight(self, with_overflow: bool = True):
-        if with_overflow:
-            if self._weight_with_overflow:
-                return self._weight_with_overflow
-            self._weight_with_overflow = self.senither_slayer_weight(with_overflow) + self.senither_skill_weight(
-                with_overflow) + self.senither_dungeon_weight(with_overflow)
+                skill_weight += self._senither_calculate_skill_weight(
+                    skill_type,
+                    self.get_skill_lvl(
+                        skill_type, experience, given_max_level=senither_old_max_level_cap
+                    ),
+                    experience, with_overflow
+                )
+        return skill_weight
+
+    def senither_weight(self):
+        if self._weight_with_overflow:
             return self._weight_with_overflow
-        else:
-            if self._weight_without_overflow:
-                return self._weight_without_overflow
-            self._weight_without_overflow = self.senither_slayer_weight(with_overflow) + self.senither_skill_weight(
-                with_overflow) + self.senither_dungeon_weight(with_overflow)
-            return self._weight_without_overflow
+
+        self._weight_with_overflow = (
+                self.senither_slayer_weight(True) +
+                self.senither_skill_weight(True) +
+                self.senither_dungeon_weight(True)
+        )
+        return self._weight_with_overflow
 
     # Lily Weight
 
@@ -444,36 +425,54 @@ class SkyBlockPlayer:
         slayer_kwargs = {  # Loop through the slayer bosses and get the xp if they key exists else default value
             "zombie": 0, "spider": 0, "wolf": 0, "enderman": 0, "blaze": 0
         }
-        if self.profile and self.profile.get("slayer_bosses"):
-            for boss_type, boss_data in self.profile.get("slayer_bosses", {}).items():
+
+        if (
+                self.member_profile and
+                self.member_profile.get("slayer") and
+                self.member_profile["slayer"].get("slayer_bosses")
+        ):
+            for boss_type, boss_data in self.member_profile["slayer"]["slayer_bosses"].items():
                 slayer_kwargs[boss_type] = boss_data.get("xp", 0)
 
             # Catacombs Completions
         # Get the catacombs weight of the player
         try:
-            cata_completions = self.profile["dungeons"]["dungeon_types"]["catacombs"]["tier_completions"]
+            cata_completions = self.member_profile["dungeons"]["dungeon_types"]["catacombs"]["tier_completions"]
             # Try to get the catacombs completions
         except:
             # If the keys are not found set to default value
             cata_completions = {}
         try:
-            m_cata_compl = self.profile["dungeons"]["dungeon_types"]["master_catacombs"]["tier_completions"]
+            m_cata_compl = self.member_profile["dungeons"]["dungeon_types"]["master_catacombs"]["tier_completions"]
         except:
             m_cata_compl = {}
 
         # Catacombs XP
         try:
-            cata_xp = self.profile["dungeons"]["dungeon_types"]["catacombs"]["experience"]
+            cata_xp = self.member_profile["dungeons"]["dungeon_types"]["catacombs"]["experience"]
         except:
             cata_xp = 0
 
         # Skills
         skill_experience_dict = {}
         skill_level_dict = {}
-        if self.profile and self.profile.get("experience_skill_mining") is None:
+
+        if (
+                self.member_profile is None or
+                self.member_profile.get("player_data") is None or
+                self.member_profile["player_data"].get("experience") is None
+        ):
+            return 0
+
+        if (
+                self.member_profile is None or
+                self.member_profile.get("player_data") is None or
+                self.member_profile["player_data"].get("experience") is None or
+                self.member_profile["player_data"]["experience"].get("SKILL_MINING") is None
+        ):
             # Skill api is off
             try:
-                player = await app.httpr.get_player_data(self.uuid)  # Get the player data from the hypixel api
+                player = await self.get_player_data(app)  # Get the player data from the hypixel api
                 for skill_type, achv_name in lilyweight.used_skills.items():
                     level = player["player"].get("achievements", {}).get(achv_name, 0)
                     # Get the level of the skill from achievements
@@ -485,10 +484,10 @@ class SkyBlockPlayer:
                 print(e)
         else:
             # Loop through all the skills lily weight uses
-            if self.profile:
+            if self.member_profile:
                 for skill_type in lilyweight.used_skills.keys():
-                    experience = self.profile.get(f"experience_skill_{skill_type}",
-                                                  0)  # Get the experience of the skill
+                    # Get the experience of the skill
+                    experience = self.member_profile["player_data"]["experience"].get(f"SKILL_{skill_type.upper()}", 0)
                     skill_experience_dict[skill_type] = experience  # Add the experience to the experience skill dict
                     skill_level_dict[skill_type] = lilyweight.get_level_from_XP(experience)
                     # Add the skill level to the counter

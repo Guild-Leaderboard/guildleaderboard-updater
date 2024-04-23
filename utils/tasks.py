@@ -20,13 +20,8 @@ class Tasks:
         # self.client.loop.create_task(self.delete_old_records())
         # self.client.loop.create_task(self.resolve_names())
         # self.client.loop.create_task(self.update_guilds())
-        # r = await self.client.db.pool.fetch("""
-        # SELECT * FROM history
-        #         """)
-        #         with open("history.json", "w") as f:
-        #             json.dump([{key: str(value) if key == "capture_date" else value for key, value in dict(i).items()} for i in r], f, indent=4)
 
-        self.client.loop.create_task(self.add_new_guild(guild_name="Menhir"))  # Drachen Jaeger 3
+        # self.client.loop.create_task(self.add_new_guild(guild_name="Menhir"))  # Drachen Jaeger 3
 
         self.client.logger.info("Tasks started")
         return self
@@ -51,12 +46,12 @@ SELECT * FROM history WHERE uuid = name ORDER by capture_date DESC;
     async def get_player(self, guild_stats, uuid):
         player: SkyBlockPlayer = await self.client.httpr.get_profile(uuid=uuid, select_profile_on="weight")
 
-        if not player.profile:
+        if not player.member_profile:
             networth = 0
         else:
             full_profile = [
                 profile for profile in player.player_data.get("profiles", []) if
-                profile["members"][uuid] == player.profile
+                profile["members"][uuid] == player.member_profile
             ][0]
             r = await self.client.httpr.get_networth(
                 uuid=uuid, profile=full_profile
@@ -70,19 +65,6 @@ SELECT * FROM history WHERE uuid = name ORDER by capture_date DESC;
 SELECT name FROM players WHERE uuid=$1 LIMIT 1;            
             """, uuid))["name"]
 
-        try:
-            sbzscammer = await self.client.httpr.sbz_check_scammer(uuid)
-        except:
-            sbzscammer = {
-                "success": False,
-                "result": {
-                    "reason": None
-                }
-
-            }
-        scam_reason = None
-        if sbzscammer["success"]:
-            scam_reason = sbzscammer["result"]["reason"]
         lily_weight = await player.lily_weight(self.client)
 
         p_stats = {
@@ -94,7 +76,6 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
             "catacombs": player.catacombs_level_overflow,
             'catacomb_xp': player.catacombs_xp,
             "total_slayer": player.slayer_xp,
-            "scam_reason": scam_reason,
             "networth": networth,
             "sb_experience": player.sb_experience,
         }
@@ -110,7 +91,7 @@ SELECT name FROM players WHERE uuid=$1 LIMIT 1;
         if p_stats["scam_reason"]:
             guild_stats["scammers"] += 1
 
-        p_profile = player.profile if player.profile else {}
+        p_profile = player.member_profile if player.member_profile else {}
 
         dungeon_types = p_profile.get("dungeons", {}).get("player_classes", {})
 
@@ -317,56 +298,3 @@ SELECT guild_id FROM (SELECT DISTINCT ON (guild_id) * FROM guilds ORDER BY guild
     UPDATE guilds SET position_change = $1 WHERE guild_id = $2;
             """, position_change, guild_id)
         print("Updated positions", len(old_guild_positions), len(current_guild_positions))
-
-#     async def find_new_guilds(self):
-#         await asyncio.sleep(60)
-#         while True:
-#             r = await self.client.db.pool.fetchrow("""
-# SELECT name, id, total_members, total_gexp, last_check FROM all_guilds WHERE total_members >= 100 AND total_gexp >= 5000000 ORDER BY last_check DESC LIMIT 1;
-#             """)
-#             if r:
-#                 await self.add_new_guild(guild_name=r["name"], guild_id=r["id"], weight_req=4000)
-#                 await self.client.db.pool.execute("""
-# UPDATE all_guilds SET last_check = NOW() WHERE id = $1;
-#             """, r["id"])
-#                 # await asyncio.sleep(10)
-
-#     async def test(self):
-#         r = await self.client.db.pool.fetch("""
-# SELECT DISTINCT ON (guild_id)
-#     guild_id, guild_name
-# FROM guilds
-#             """)
-#         all_guilds = {x["guild_id"]: x["guild_name"] for x in r}
-#         progess = 0
-#         for guild_id, guild_name in all_guilds.items():
-#             guild_history = await self.client.db.pool.fetch("""
-# SELECT
-#     players,
-#     capture_date::timestamptz at time zone 'UTC' AS capture_date
-# FROM guilds
-#     WHERE guild_id = $1
-# ORDER BY capture_date
-#                 """, guild_id)
-#             prev_players = []
-#
-#             for guild_history_entry in guild_history:
-#                 current_players = guild_history_entry["players"]
-#                 capture_date: datetime.timedelta = guild_history_entry["capture_date"]
-#
-#                 leave_uuids = [uuid for uuid in prev_players if uuid not in current_players]
-#                 join_uuids = [uuid for uuid in current_players if uuid not in prev_players]
-#
-#                 name_uuid_dict = await self.client.db.get_names(leave_uuids + join_uuids)
-#
-#                 for leave_uuid in leave_uuids:
-#                     await self.client.db.insert_history("0", leave_uuid, name_uuid_dict.get(leave_uuid, leave_uuid),
-#                                                         guild_id, guild_name, capture_date)
-#
-#                 for join_uuid in join_uuids:
-#                     await self.client.db.insert_history("1", join_uuid, name_uuid_dict.get(join_uuid, join_uuid),
-#                                                         guild_id, guild_name, capture_date)
-#
-#                 prev_players = current_players
-#             print(guild_id, progess)
-#             progess += 1
