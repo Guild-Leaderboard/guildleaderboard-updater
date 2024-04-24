@@ -1,6 +1,6 @@
-asyncpg
 aiohttp
 nbt
 wrapt
 python-dotenv
 lilyweight
+pymongo

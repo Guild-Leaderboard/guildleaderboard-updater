@@ -23,6 +23,7 @@ class SkyBlockPlayer:
 
         self.member_profile = None
         self.cute_name = None
+        self.profile_id = None
 
         self._senither_constants = {
             "dungeons_level50_experience": 569809640,
@@ -142,6 +143,7 @@ class SkyBlockPlayer:
                 if profile["profile_id"] == profile_id:  # and self.uuid in profile["members"]:
                     self.member_profile = profile["members"][self.uuid]
                     self.cute_name = profile["cute_name"]
+                    self.profile_id = profile["profile_id"]
                     return self.member_profile
 
         if profile_name:
@@ -149,19 +151,24 @@ class SkyBlockPlayer:
                 if profile["cute_name"] == profile_name:
                     self.member_profile = profile["members"][self.uuid]
                     self.cute_name = profile["cute_name"]
+                    self.profile_id = profile["profile_id"]
                     return self.member_profile
 
         profiles = []
         for profile in self.player_data["profiles"]:
             try:
                 profile["members"][self.uuid]["cute_name"] = profile["cute_name"]
+                profile["members"][self.uuid]["profile_id"] = profile["profile_id"]
                 profiles.append(profile["members"][self.uuid])
             except KeyError:
                 continue
 
-        self.member_profile = sorted(profiles, key=lambda x: x.get("leveling", {}).get("experience", 0), reverse=True)[
-            0]
+        self.member_profile = sorted(
+            profiles, key=lambda x: x.get("leveling", {}).get("experience", 0), reverse=True
+        )[0]
+
         self.cute_name = self.member_profile["cute_name"]
+        self.profile_id = self.member_profile["profile_id"]
 
         self._weight_with_overflow = None
         return self.member_profile
@@ -462,7 +469,7 @@ class SkyBlockPlayer:
                 self.member_profile.get("player_data") is None or
                 self.member_profile["player_data"].get("experience") is None
         ):
-            return 0
+            return {"total": 0}
 
         if (
                 self.member_profile is None or

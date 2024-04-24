@@ -132,11 +132,7 @@ class Httpr:
                 await asyncio.sleep(5)
 
     @ratelimit_apis(get_sb_player_data, host_mapping=host_mapping)
-    async def get_profile(
-            self, uuid: str,
-            profile_id: str = None,
-            profile_name: str = None
-    ) -> SkyBlockPlayer:
+    async def get_profile(self, uuid: str, profile_id: str = None, profile_name: str = None) -> SkyBlockPlayer:
         return SkyBlockPlayer(
             uuid,
             await self.get_sb_player_data(uuid),
@@ -145,8 +141,7 @@ class Httpr:
         )
 
     @ratelimit_apis("api.hypixel.net", host_mapping=host_mapping)
-    async def get_guild_data(self, _id: str = None, uuid: str = None, name: str = None,
-                             ) -> dict:
+    async def get_guild_data(self, _id: str = None, uuid: str = None, name: str = None) -> dict:
         if _id is not None:
             param = f"?id={_id}"
         elif uuid is not None:
@@ -177,17 +172,31 @@ class Httpr:
         guild_data = await self.get_guild_data(*args, **kwargs)
         return [i["uuid"] for i in guild_data["guild"]["members"]]
 
+    @ratelimit_apis("api.hypixel.net", host_mapping=host_mapping)
+    async def get_museum_data(self, profile_id: str):
+        for i in range(50):
+            try:
+                async with self.session.get(f"https://api.hypixel.net/v2/skyblock/museum?profile={profile_id}") as r:
+                    if r.status == 200:
+                        return await r.json()
+                    elif r.status == 422:
+                        return None
+                    else:
+                        raise UnexpectedResponse("Error while getting museum data", r)
+            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+                self.client.logger.error(f"Error getting museum data {e}, retrying {i + 1}/50")
+                await asyncio.sleep(5)
+
+
     @ratelimit_apis("nwapi.guildleaderboard.com", host_mapping=host_mapping)
-    async def get_networth(self, uuid: str, profile):
+    async def get_networth(self, uuid: str, profile, museum_data=None):
         for i in range(50):
             try:
                 async with self.session.get(
-                        f'https://nwapi.guildleaderboard.com/networth?uuid={uuid}', json={
+                        f'http://195.201.43.165:8880/networth?uuid={uuid}', json={
                             "profileData": profile["members"][uuid],
                             "bankBalance": profile.get("banking", {}).get("balance", 0),
-                            "options": {
-                                "onlyNetworth": True,
-                            }
+                            "museumData": museum_data
                         },
                 ) as r:
                     if r.status == 200:

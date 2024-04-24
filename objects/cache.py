@@ -1,15 +1,14 @@
 import asyncio
 import logging
-import os
 from functools import wraps
 from typing import Union
-import aiohttp
+
 from objects.errors import *
 from objects.utils import Time
 
 DEFAULT_TIMEOUT = 999
 
-HYPIXEL_KEY = os.getenv("HYPIXEL_KEY")
+HYPIXEL_KEY = "b7c6db5f-8baf-4383-9f37-84cd91f2cd09"
 
 """
 high level cache workflow:
@@ -94,7 +93,7 @@ class RatelimitHandler:
                 "exclude": [],
             },
             "api.hypixel.net": {  # https://api.hypixel.net/
-                "max": 100,  # max requests per minute
+                "max": 50,  # max requests per minute # supposed to be 100
                 "headers": {"API-Key": HYPIXEL_KEY},
                 "ratelimit_sync": False,
                 "exclude": ["/skyblock/auctions", "/skyblock/auctions_ended"],
@@ -113,6 +112,12 @@ class RatelimitHandler:
                 "exclude": [],
             },
             "nwapi.guildleaderboard.com": {  # https://api.hypixel.net/
+                "max": 1000,  # max requests per minute
+                "headers": {"authorization": "TIMNOOT_IS_AWESOME"},
+                "ratelimit_sync": False,
+                "exclude": [],
+            },
+            "195.201.43.165": {  # https://api.hypixel.net/
                 "max": 1000,  # max requests per minute
                 "headers": {"authorization": "TIMNOOT_IS_AWESOME"},
                 "ratelimit_sync": False,
