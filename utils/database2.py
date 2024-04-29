@@ -243,9 +243,6 @@ class Database2:
         return r["metrics"][0]["players"]
 
     async def get_names(self, uuids: List):
-        #         r = await self.pool.fetch("""
-        # SELECT uuid, name FROM players WHERE uuid = ANY($1)""", uuids)
-        #         return {row['uuid']: row['name'] for row in r}
         r = self.players.find({"_id": {"$in": uuids}})
         return {row["_id"]: row["name"] async for row in r}
 
