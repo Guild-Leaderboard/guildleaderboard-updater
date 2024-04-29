@@ -32,5 +32,4 @@ class Client:
 
 
 client = Client()
-
 asyncio.run(client.run())

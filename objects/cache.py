@@ -8,7 +8,7 @@ from objects.utils import Time
 
 DEFAULT_TIMEOUT = 999
 
-HYPIXEL_KEY = "b7c6db5f-8baf-4383-9f37-84cd91f2cd09"
+HYPIXEL_KEY = "27b5e087-0f4c-49b5-b18f-9efcd4c33797"
 
 """
 high level cache workflow:

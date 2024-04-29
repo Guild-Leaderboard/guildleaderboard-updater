@@ -4,3 +4,4 @@ wrapt
 python-dotenv
 lilyweight
 pymongo
+motor

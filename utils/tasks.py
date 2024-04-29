@@ -18,10 +18,10 @@ class Tasks:
         self.client: Client = client
 
     async def open(self):
+        _ = self.client.loop.create_task(self.delete_old_records())
+        _ = self.client.loop.create_task(self.update_positions())
         _ = self.client.loop.create_task(self.update_guilds())
-        _ =self.client.loop.create_task(self.delete_old_records())
         _ = self.client.loop.create_task(self.resolve_names())
-
 
         # t = self.client.loop.create_task(self.update_guild(guild_id="5b243ac90cf212fe4c98d619"))
         # t = self.client.loop.create_task(self.update_player({}, "5e22209be5864a088761aa6bde56a090"))
@@ -89,6 +89,7 @@ class Tasks:
             "archer_xp": dungeon_types.get("archer", {}).get("experience", 0),
             "tank_xp": dungeon_types.get("tank", {}).get("experience", 0),
 
+
             "average_skill": skill_average,
             "taming_xp": skill_xps.get("SKILL_TAMING", 0),
             "mining_xp": skill_xps.get("SKILL_MINING", 0),
@@ -101,7 +102,7 @@ class Tasks:
             "carpentry_xp": skill_xps.get("SKILL_CARPENTRY", 0),
         }
         print(p_stats)
-        self.client.db.upsert_player_entry(**p_stats)
+        await self.client.db.upsert_player_entry(**p_stats)
 
         guild_stats["senither_weight"] += p_stats["senither_weight"]
         guild_stats["lily_weight"] += p_stats["lily_weight"]
@@ -112,20 +113,20 @@ class Tasks:
         guild_stats["sb_experience"] += p_stats["sb_experience"]
         guild_stats["count"] += 1
 
-    def add_guild_history(self, old_players, new_players, guild_id, guild_name):
+    async def add_guild_history(self, old_players, new_players, guild_id, guild_name):
         leave_uuids = [uuid for uuid in old_players if uuid not in new_players]
         join_uuids = [uuid for uuid in new_players if uuid not in old_players]
 
-        name_uuid_dict = self.client.db.get_names(leave_uuids + join_uuids)
+        name_uuid_dict = await self.client.db.get_names(leave_uuids + join_uuids)
         print(name_uuid_dict)
 
         for leave_uuid in leave_uuids:
             name = name_uuid_dict.get(leave_uuid, leave_uuid)
-            self.client.db.insert_history("0", leave_uuid, name, guild_id, guild_name)
+            await self.client.db.insert_history("0", leave_uuid, name, guild_id, guild_name)
 
         for join_uuid in join_uuids:
             name = name_uuid_dict.get(join_uuid, join_uuid)
-            self.client.db.insert_history("1", join_uuid, name, guild_id, guild_name)
+            await self.client.db.insert_history("1", join_uuid, name, guild_id, guild_name)
 
     async def update_guild(self, guild_name=None, guild_id=None, weight_req=None):
         r = await self.client.httpr.get_guild_data(name=guild_name, _id=guild_id)
@@ -171,10 +172,10 @@ class Tasks:
             return
 
         print("Adding", guild_data["name"])
-        old_guild_members = self.client.db.get_guild_members(guild_data["_id"])
+        old_guild_members = await self.client.db.get_guild_members(guild_data["_id"])
         new_guild_members = [i["uuid"] for i in guild_data["members"]]
 
-        self.client.db.upsert_guild_entry(
+        await self.client.db.upsert_guild_entry(
             guild_id=guild_data["_id"],
             guild_name=guild_data["name"],
             players=new_guild_members,
@@ -187,8 +188,8 @@ class Tasks:
             sb_experience=new_guild_stats["sb_experience"],
         )
 
-        self.add_guild_history(old_guild_members, new_guild_members, guild_data["_id"], guild_data["name"])
-        self.update_positions()
+        await self.add_guild_history(old_guild_members, new_guild_members, guild_data["_id"], guild_data["name"])
+        await self.update_positions()
 
     async def update_guilds(self):
         while True:
@@ -197,7 +198,8 @@ class Tasks:
                 "metrics.0.capture_date": {"$lt": datetime.datetime.now() - datetime.timedelta(days=1)}
             }, {"_id": 1})
 
-            for g in r:
+            async for g in r:
+                print(g["_id"])
                 try:
                     await self.update_guild(guild_id=g["_id"])
                 except asyncio.exceptions.TimeoutError:
@@ -207,22 +209,32 @@ class Tasks:
     async def delete_old_records(self):
         while True:
             # delete metrics older than 90 days
-            r1 = self.client.db.guilds.delete_many({
-                "metrics.capture_date": {"$lt": datetime.datetime.now() - datetime.timedelta(days=90)}
-            })
-            r2 = self.client.db.players.delete_many({
-                "metrics.capture_date": {"$lt": datetime.datetime.now() - datetime.timedelta(days=90)}
-            })
-            print(r1, r2)
+            guilds = self.client.db.guilds.find({}, {"metrics": 1})
+            async for guild in guilds:
+                new_metrics = []
+                for metric in guild["metrics"]:
+                    if metric["capture_date"] > datetime.datetime.now() - datetime.timedelta(days=90):
+                        new_metrics.append(metric)
+                await self.client.db.guilds.update_one({"_id": guild["_id"]}, {"$set": {"metrics": new_metrics}})
+
+            players = self.client.db.players.find({}, {"metrics": 1})
+            async for player in players:
+                new_metrics = []
+                for metric in player["metrics"]:
+                    if metric["capture_date"] > datetime.datetime.now() - datetime.timedelta(days=90):
+                        new_metrics.append(metric)
+                await self.client.db.players.update_one({"_id": player["_id"]}, {"$set": {"metrics": new_metrics}})
+
+            print("Deleted old records")
             await asyncio.sleep(3600)
 
-    def update_positions(self):
+    async def update_positions(self):
         # Get only the latest metrics
         all_guilds = self.client.db.guilds.find({}, {"guild_name": 1, "_id": 1, "metrics": {"$slice": 4}})
         # print(list(current_guilds))
         current_guilds = []
         old_guilds = []
-        for g in all_guilds:
+        async for g in all_guilds:
             current_guilds.append({
                 "_id": g["_id"],
                 "weighted_stats": g["metrics"][0]["weighted_stats"]
@@ -250,8 +262,8 @@ class Tasks:
         #     print("")
 
         for guild_id, position_change in positions_difference.items():
-            self.client.db.guilds.update_one({"_id": guild_id}, {"$set": {"position_change": position_change}})
-
+            await self.client.db.guilds.update_one({"_id": guild_id}, {"$set": {"position_change": position_change}})
+        await asyncio.sleep(1)
         # Update positions Array
         guild_position_str = {}
         for i in range(7):
@@ -264,17 +276,17 @@ class Tasks:
                 guild_position_str[g["_id"]].append(str(j + 1))
 
         for i, position_str in guild_position_str.items():
-            self.client.db.guilds.update_one({"_id": i}, {"$set": {"positions": ",".join(position_str)}})
+            await self.client.db.guilds.update_one({"_id": i}, {"$set": {"positions": ",".join(position_str)}})
 
     async def resolve_names(self):
         while True:
             broken_rows = self.client.db.history.find({"uuid": {"$eq": "name"}})
-            uuids = [i["uuid"] for i in broken_rows]
-            uuid_name_dict = self.client.db.get_names(uuids)
-            for row in broken_rows:
+            uuids = [i["uuid"] async for i in broken_rows]
+            uuid_name_dict = await self.client.db.get_names(uuids)
+            async for row in broken_rows:
                 try:
                     name = uuid_name_dict[row["uuid"]]
                 except KeyError:
                     name = await self.client.httpr.get_name(row["uuid"])
-                self.client.db.history.update_one({"uuid": row["uuid"]}, {"$set": {"name": name}})
+                await self.client.db.history.update_one({"uuid": row["uuid"]}, {"$set": {"name": name}})
             await asyncio.sleep(3600)

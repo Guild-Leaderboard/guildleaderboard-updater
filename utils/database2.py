@@ -2,7 +2,8 @@ import datetime
 from math import *
 from typing import List
 
-from pymongo import MongoClient
+# import motor
+from motor.motor_asyncio import AsyncIOMotorClient
 
 
 def weight_multiplier(members):
@@ -126,7 +127,7 @@ players {
 
 class Database2:
     def __init__(self, app=None):
-        self.client = MongoClient('195.201.43.165', 27017, username='root', password='R8xC7rdEE8')
+        self.client = AsyncIOMotorClient('195.201.43.165', 27017, username='root', password='R8xC7rdEE8')
         self.db = self.client.guildleaderboard
         self.app = app
 
@@ -149,7 +150,7 @@ class Database2:
         self.players.create_index([("latest_cata", -1)])
         self.players.create_index([("latest_asl", -1)])
 
-    def upsert_guild_entry(
+    async def upsert_guild_entry(
             self, guild_id: str, guild_name: str, players: List[str], senither_weight: float, skills: float,
             catacombs: float, slayer: float, lily_weight: float, networth: int, sb_experience: int, discord: str = None
     ):
@@ -163,7 +164,7 @@ class Database2:
             "weighted_stats": weighted_stats
         }
 
-        self.guilds.update_one(
+        await self.guilds.update_one(
             {"_id": guild_id},
             {
                 "$push": {"metrics": {"$each": [metrics], "$position": 0}},
@@ -177,7 +178,7 @@ class Database2:
             upsert=True
         )
 
-    def upsert_player_entry(
+    async def upsert_player_entry(
             self, uuid: str, name: str, senither_weight: float, lily_weight: float, networth: int, sb_experience: int,
 
             total_slayer: int, zombie_xp: int, spider_xp: int, wolf_xp: int, enderman_xp: int, blaze_xp: int,
@@ -203,7 +204,7 @@ class Database2:
             "skill_stats": skill_stats
         }
 
-        self.players.update_one(
+        await self.players.update_one(
             {"_id": uuid},
             {
                 "$push": {"metrics": {"$each": [metrics], "$position": 0}},
@@ -222,12 +223,12 @@ class Database2:
             upsert=True
         )
 
-    def insert_history(self, history_type: str, uuid: str, name: str, guild_id: str, guild_name: str,
-                       capture_date: datetime.datetime = None):
+    async def insert_history(self, history_type: str, uuid: str, name: str, guild_id: str, guild_name: str,
+                             capture_date: datetime.datetime = None):
         if capture_date is None:
             capture_date = datetime.datetime.now()
 
-        self.history.insert_one({
+        await self.history.insert_one({
             "type": str(history_type),
             "uuid": uuid,
             "name": name,
@@ -236,26 +237,27 @@ class Database2:
             "capture_date": capture_date
         })
 
-    def get_guild_members(self, guild_id: str):
+    async def get_guild_members(self, guild_id: str):
         # Get the latest list of guild members
-        return self.guilds.find_one({"_id": guild_id})["metrics"][0]["players"]
+        r = await self.guilds.find_one({"_id": guild_id})
+        return r["metrics"][0]["players"]
 
-    def get_names(self, uuids: List):
+    async def get_names(self, uuids: List):
         #         r = await self.pool.fetch("""
         # SELECT uuid, name FROM players WHERE uuid = ANY($1)""", uuids)
         #         return {row['uuid']: row['name'] for row in r}
         r = self.players.find({"_id": {"$in": uuids}})
-        return {row["_id"]: row["name"] for row in r}
+        return {row["_id"]: row["name"] async for row in r}
 
-
-def main(self):
-    import time
-    t = time.time()
-
-    print(time.time() - t)
-    print(e)
+    async def main(self):
+        pass
 
 
 if __name__ == "__main__":
-    db = Database2()
-    db.main()
+    import asyncio
+
+    async def main():
+        db = Database2()
+        await db.main()
+
+    asyncio.run(main())
