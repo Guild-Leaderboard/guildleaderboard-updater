@@ -240,7 +240,7 @@ class Database2:
     async def get_guild_members(self, guild_id: str):
         # Get the latest list of guild members
         r = await self.guilds.find_one({"_id": guild_id})
-        return r["metrics"][0]["players"]
+        return r["metrics"][0]["players"] if r else []
 
     async def get_names(self, uuids: List):
         r = self.players.find({"_id": {"$in": uuids}})

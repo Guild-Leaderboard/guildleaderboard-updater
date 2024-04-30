@@ -89,7 +89,6 @@ class Tasks:
             "archer_xp": dungeon_types.get("archer", {}).get("experience", 0),
             "tank_xp": dungeon_types.get("tank", {}).get("experience", 0),
 
-
             "average_skill": skill_average,
             "taming_xp": skill_xps.get("SKILL_TAMING", 0),
             "mining_xp": skill_xps.get("SKILL_MINING", 0),
@@ -189,7 +188,7 @@ class Tasks:
         )
 
         await self.add_guild_history(old_guild_members, new_guild_members, guild_data["_id"], guild_data["name"])
-        await self.update_positions()
+        _ = self.client.loop.create_task(self.update_positions())
 
     async def update_guilds(self):
         while True:
@@ -229,6 +228,32 @@ class Tasks:
             await asyncio.sleep(3600)
 
     async def update_positions(self):
+        # Update Player positions Array
+        all_players = self.client.db.players.find({}, {
+            "_id": 1, "latest_senither": 1, "latest_lily": 1, "latest_nw": 1, "latest_sb_xp": 1, "latest_slayer": 1,
+            "latest_cata": 1, "latest_asl": 1
+        })
+        current_players = []
+        async for player in all_players:
+            current_players.append({
+                "_id": player["_id"],
+                "weighted_stats": f"{player['latest_senither']},{player['latest_asl']},{player['latest_cata']},{player['latest_slayer']},{player['latest_lily']},{player['latest_nw']},{player['latest_sb_xp']}"
+            })
+
+        player_position_str = {}
+        for i in range(7):
+            cur_players_sorted = sorted(current_players, key=lambda x: float(x["weighted_stats"].split(",")[i]),
+                                        reverse=True)
+            for j, p in enumerate(cur_players_sorted):
+                if p["_id"] not in player_position_str:
+                    player_position_str[p["_id"]] = []
+
+                player_position_str[p["_id"]].append(str(j + 1))
+
+        for player_id, position_str in player_position_str.items():
+            await self.client.db.players.update_one({"_id": player_id}, {"$set": {"positions": ",".join(position_str)}})
+
+
         # Get only the latest metrics
         all_guilds = self.client.db.guilds.find({}, {"guild_name": 1, "_id": 1, "metrics": {"$slice": 4}})
         # print(list(current_guilds))
@@ -241,7 +266,8 @@ class Tasks:
             })
             old_guilds.append({
                 "_id": g["_id"],
-                "weighted_stats": g["metrics"][3]["weighted_stats"]
+                "weighted_stats": g["metrics"][3]["weighted_stats"] if len(g["metrics"]) > 3 else g["metrics"][0][
+                    "weighted_stats"]
             })
 
         cur_guilds_sorted = sorted(current_guilds, key=lambda x: int(x["weighted_stats"].split(",")[6]), reverse=True)
@@ -254,17 +280,11 @@ class Tasks:
             k: old_guild_positions[k] - current_guild_positions[k] for k in
             set(current_guild_positions.keys()) & set(old_guild_positions.keys())
         }
-        # print(positions_difference)
-        # for i, k in positions_difference.items():
-        #     print("Position Change: ", i, k)
-        #     print("Previous", old_guild_positions[i])
-        #     print("Current", current_guild_positions[i])
-        #     print("")
 
         for guild_id, position_change in positions_difference.items():
             await self.client.db.guilds.update_one({"_id": guild_id}, {"$set": {"position_change": position_change}})
-        await asyncio.sleep(1)
-        # Update positions Array
+
+        # Update guild positions Array
         guild_position_str = {}
         for i in range(7):
             cur_guilds_sorted = sorted(current_guilds, key=lambda x: float(x["weighted_stats"].split(",")[i]),
