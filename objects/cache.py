@@ -5,10 +5,14 @@ from typing import Union
 
 from objects.errors import *
 from objects.utils import Time
+import os
 
 DEFAULT_TIMEOUT = 999
 
-HYPIXEL_KEY = "27b5e087-0f4c-49b5-b18f-9efcd4c33797"
+if os.name == 'posix':
+    HYPIXEL_KEY = "2764e7a2-6df6-48a7-bd87-fc8aeb480484" # production
+else:
+    HYPIXEL_KEY = "27b5e087-0f4c-49b5-b18f-9efcd4c33797"
 
 """
 high level cache workflow:
@@ -93,7 +97,7 @@ class RatelimitHandler:
                 "exclude": [],
             },
             "api.hypixel.net": {  # https://api.hypixel.net/
-                "max": 50,  # max requests per minute # supposed to be 100
+                "max": 100 if os.name == 'posix' else 50,  # max requests per minute # supposed to be 100
                 "headers": {"API-Key": HYPIXEL_KEY},
                 "ratelimit_sync": False,
                 "exclude": ["/skyblock/auctions", "/skyblock/auctions_ended"],

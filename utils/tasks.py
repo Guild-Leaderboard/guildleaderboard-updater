@@ -2,6 +2,7 @@ import asyncio
 import datetime
 from math import sin
 from typing import TYPE_CHECKING
+import os
 
 if TYPE_CHECKING:
     from main import Client
@@ -18,16 +19,17 @@ class Tasks:
         self.client: Client = client
 
     async def open(self):
-        _ = self.client.loop.create_task(self.delete_old_records())
-        _ = self.client.loop.create_task(self.update_positions())
-        _ = self.client.loop.create_task(self.update_guilds())
-        _ = self.client.loop.create_task(self.resolve_names())
-
-        # t = self.client.loop.create_task(self.update_guild(guild_id="5b243ac90cf212fe4c98d619"))
-        # t = self.client.loop.create_task(self.update_player({}, "5e22209be5864a088761aa6bde56a090"))
-        # self.update_positions()
-
-        # self.client.loop.create_task(self.add_new_guild(guild_name="Menhir"))  # Drachen Jaeger 3
+        if os.name == 'posix':
+            _ = self.client.loop.create_task(self.delete_old_records())
+            _ = self.client.loop.create_task(self.update_positions())
+            _ = self.client.loop.create_task(self.update_guilds())
+            _ = self.client.loop.create_task(self.resolve_names())
+        else:
+            # await self.client.db.update_discord('BlossomTree', 'sbPZ8ens7F')
+            # print("inserted discord")
+            pass
+            t = self.client.loop.create_task(self.update_guild(guild_name="Election", discord='SkVw9tJ7Hz'))
+            # t = self.client.loop.create_task(self.update_player({}, "5e22209be5864a088761aa6bde56a090"))
 
         self.client.logger.info("Tasks started")
         return self
@@ -127,7 +129,7 @@ class Tasks:
             name = name_uuid_dict.get(join_uuid, join_uuid)
             await self.client.db.insert_history("1", join_uuid, name, guild_id, guild_name)
 
-    async def update_guild(self, guild_name=None, guild_id=None, weight_req=None):
+    async def update_guild(self, guild_name=None, guild_id=None, weight_req=None, discord:str=None):
         r = await self.client.httpr.get_guild_data(name=guild_name, _id=guild_id)
         guild_data = r["guild"]
         if not guild_data:
@@ -185,6 +187,7 @@ class Tasks:
             slayer=new_guild_stats["slayer"],
             networth=new_guild_stats["networth"],
             sb_experience=new_guild_stats["sb_experience"],
+            discord=discord
         )
 
         await self.add_guild_history(old_guild_members, new_guild_members, guild_data["_id"], guild_data["name"])
@@ -194,7 +197,7 @@ class Tasks:
         while True:
             # Find guilds that have not been updated in the last 24 hours
             r = self.client.db.guilds.find({
-                "metrics.0.capture_date": {"$lt": datetime.datetime.now() - datetime.timedelta(days=1)}
+                "metrics.0.capture_date": {"$lt": datetime.datetime.now() - datetime.timedelta(hours=20)}
             }, {"_id": 1})
 
             async for g in r:

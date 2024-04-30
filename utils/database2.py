@@ -246,6 +246,12 @@ class Database2:
         r = self.players.find({"_id": {"$in": uuids}})
         return {row["_id"]: row["name"] async for row in r}
 
+    async def update_discord(self, guild_name, discord):
+        await self.guilds.update_one(
+            {"guild_name": guild_name},
+            {"$set": {"discord": discord}}
+        )
+
     async def main(self):
         pass
 
