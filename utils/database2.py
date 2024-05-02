@@ -170,9 +170,9 @@ class Database2:
                 "$push": {"metrics": {"$each": [metrics], "$position": 0}},
                 "$set": {
                     "guild_name": guild_name,
-                    "discord": discord,
                     "positions": "0,0,0,0,0,0,0",
-                    "position_change": 0
+                    "position_change": 0,
+                    **({"discord": discord} if discord else {})
                 }
             },
             upsert=True

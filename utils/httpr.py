@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from aiohttp import ClientOSError, ClientPayloadError
+from aiohttp import ClientOSError, ClientPayloadError, ServerDisconnectedError
 
 from objects.api_objects import SkyBlockPlayer
 from objects.cache import RateLimitSession, Ratelimit, ratelimit_apis
@@ -114,7 +114,7 @@ class Httpr:
                         return await r.json()
                     else:
                         raise UnexpectedResponse("Error while getting UUID", r)
-            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+            except (ClientOSError, ClientPayloadError, ServerDisconnectedError, UnexpectedResponse) as e:
                 self.client.logger.error(f"Error getting player_data {e}, retrying {i + 1}/5")
                 await asyncio.sleep(5)
 
@@ -127,7 +127,7 @@ class Httpr:
                         return await r.json()
                     else:
                         raise UnexpectedResponse(f"Error getting sb_player_data {r.status}", r)
-            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+            except (ClientOSError, ClientPayloadError, ServerDisconnectedError, UnexpectedResponse) as e:
                 self.client.logger.error(f"Error getting sb_player_data {e}, retrying {i + 1}/50")
                 await asyncio.sleep(5)
 
@@ -163,7 +163,7 @@ class Httpr:
                     else:
                         print(await r.json())
                         raise UnexpectedResponse("Error while getting Guild data", r)
-            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+            except (ClientOSError, ClientPayloadError, ServerDisconnectedError, UnexpectedResponse) as e:
                 self.client.logger.error(f"Error getting networth {e}, retrying {i + 1}/50")
                 await asyncio.sleep(5)
 
@@ -183,7 +183,7 @@ class Httpr:
                         return None
                     else:
                         raise UnexpectedResponse("Error while getting museum data", r)
-            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+            except (ClientOSError, ClientPayloadError, ServerDisconnectedError, UnexpectedResponse) as e:
                 self.client.logger.error(f"Error getting museum data {e}, retrying {i + 1}/50")
                 await asyncio.sleep(5)
 
@@ -203,6 +203,6 @@ class Httpr:
                         return await r.json()
                     else:
                         raise UnexpectedResponse("Error while getting networth", r)
-            except (ClientOSError, ClientPayloadError, UnexpectedResponse) as e:
+            except (ClientOSError, ClientPayloadError, ServerDisconnectedError, UnexpectedResponse) as e:
                 self.client.logger.error(f"Error getting networth {e}, retrying {i + 1}/50")
                 await asyncio.sleep(5)

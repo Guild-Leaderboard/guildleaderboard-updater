@@ -25,10 +25,12 @@ class Tasks:
             _ = self.client.loop.create_task(self.update_guilds())
             _ = self.client.loop.create_task(self.resolve_names())
         else:
-            # await self.client.db.update_discord('BlossomTree', 'sbPZ8ens7F')
+            # await self.client.db.update_discord('Ironman Academy', 'ims')
             # print("inserted discord")
-            pass
-            t = self.client.loop.create_task(self.update_guild(guild_name="Election", discord='SkVw9tJ7Hz'))
+            # pass
+            # spongia
+
+            t = self.client.loop.create_task(self.update_guild(guild_name="spongia"))
             # t = self.client.loop.create_task(self.update_player({}, "5e22209be5864a088761aa6bde56a090"))
 
         self.client.logger.info("Tasks started")
@@ -197,7 +199,7 @@ class Tasks:
         while True:
             # Find guilds that have not been updated in the last 24 hours
             r = self.client.db.guilds.find({
-                "metrics.0.capture_date": {"$lt": datetime.datetime.now() - datetime.timedelta(hours=20)}
+                "metrics.0.capture_date": {"$lt": datetime.datetime.now() - datetime.timedelta(hours=24)}
             }, {"_id": 1})
 
             async for g in r:

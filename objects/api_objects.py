@@ -267,6 +267,8 @@ class SkyBlockPlayer:
     def get_skill_lvl(self, skill_type, exp, given_max_level=None):
         # max_level = self.skill_max_level[skill_type] if given_max_level is None else given_max_level
         max_level = given_max_level if given_max_level else self.skill_max_level[skill_type]
+        if max_level > 60:
+            max_level = 60
         levels = {
             "0": 0, "1": 50, "2": 175, "3": 375, "4": 675, "5": 1175, "6": 1925, "7": 2925, "8": 4425, "9": 6425,
             "10": 9925, "11": 14925, "12": 22425, "13": 32425, "14": 47425, "15": 67425, "16": 97425, "17": 147425,

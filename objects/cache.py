@@ -12,7 +12,7 @@ DEFAULT_TIMEOUT = 999
 if os.name == 'posix':
     HYPIXEL_KEY = "2764e7a2-6df6-48a7-bd87-fc8aeb480484" # production
 else:
-    HYPIXEL_KEY = "27b5e087-0f4c-49b5-b18f-9efcd4c33797"
+    HYPIXEL_KEY = "fe91b862-7ae8-4314-9192-1b4a458aa071"
 
 """
 high level cache workflow:
